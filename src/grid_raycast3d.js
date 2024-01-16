@@ -3,6 +3,8 @@ const frac1 = x => 1 - x + Math.floor(x);
 const sign = x => (x > 0 ? 1 : (x < 0 ? -1 : 0));
 
 export const gridRaycast3d = function *(x1, y1, z1, x2, y2, z2) {
+    yield [Math.floor(x1), Math.floor(y1), Math.floor(z1)];
+
     let tMaxX, tMaxY, tMaxZ, tDeltaX, tDeltaY, tDeltaZ;
     let voxel = {x: 0, y: 0, z: 0};
 

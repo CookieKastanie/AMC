@@ -1,3 +1,3 @@
 # AMC
 
-Another Minecaft Clone
+Another Minecraft Clone

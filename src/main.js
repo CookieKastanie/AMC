@@ -77,7 +77,6 @@ time.onTick(() => {
 	LRD.start();
 
 	if(keyboard.isPressed(Keyboard.KEY_A)) {
-		console.log("set")
 		camera2.position = [...camera.position];
 		camera2.up = [...camera.up];
 		camera2.forward = [...camera.forward];
@@ -104,7 +103,8 @@ time.onTick(() => {
 				block.isAir = false;
 				//block.id = 16*3 + 1;
 				block.id = 4;
-				block.isTransparent = true;
+				//block.isTransparent = true;
+				block.isTransparent = false;
 
 				Action.placeBlockFromCameraRay(world, block, camera);
 			}
