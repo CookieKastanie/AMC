@@ -1,0 +1,3 @@
+# AMC
+
+Another Minecaft Clone
