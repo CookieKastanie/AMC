@@ -10,7 +10,7 @@ import { TrackBallCamera, FirstPersonCamera, Infos, Camera } from 'akila/utils'
 import { TERRAIN_IMG_DATA } from './terrain_image_data'
 import { CROSS_IMAGE_DATA } from './cross_image_data'
 
-import { TERRAIN_OPAQUE_VS, TERRAIN_OPAQUE_FS, CROSS_VS, CROSS_FS } from './frags'
+import { TERRAIN_OPAQUE_VS, TERRAIN_OPAQUE_FS, CROSS_VS, CROSS_FS, BLOCK_SELECT_VS, BLOCK_SELECT_FS } from './frags'
 import { Block } from './block'
 import { SDF } from './sdf_functions'
 import { LRD } from './line_debugger_renderer'
@@ -29,6 +29,8 @@ const crossVAO = new VAO(VAO.TRIANGLE_FAN);
 crossVAO.addVBO(new VBO([-1, -1, 1, -1, 1, 1, -1, 1], 2, 0));
 const crossShader = new Shader(CROSS_VS, CROSS_FS);
 
+const blockSelectShader = new Shader(BLOCK_SELECT_VS, BLOCK_SELECT_FS);
+
 let terrainTexture;
 let crossTexture;
 
@@ -42,11 +44,59 @@ let camera2;
 
 let player;
 
+const playerBlocks = [
+	{
+		isAir: false,
+		id: 1,
+		isTransparent: false
+	},
+	{
+		isAir: false,
+		id: 2,
+		isTransparent: false
+	},
+	{
+		isAir: false,
+		id: 4,
+		isTransparent: false
+	},
+	{
+		isAir: false,
+		id: 16 * 3,
+		isTransparent: false
+	}
+];
+
+for(let i = 0; i < 4; ++i) {
+	playerBlocks.push({
+		isAir: false,
+		id: 16 + i,
+		isTransparent: false
+	});
+}
+
+for(let i = 0; i < 3; ++i) {
+	playerBlocks.push({
+		isAir: false,
+		id: 16 * 2 + i,
+		isTransparent: false
+	});
+}
+
+for(let i = 0; i < 16; ++i) {
+	playerBlocks.push({
+		isAir: false,
+		id: 16 * 4 + i,
+		isTransparent: false
+	});
+}
+let currentPlayerBlockIndex = 0;
+
 const time = new Time();
 
 //const world = new World(16, 4, 16);
-//const world = new World(8, 2, 8);
-const world = new World(4, 2, 4);
+const world = new World(8, 4, 8);
+//const world = new World(4, 2, 4);
 
 time.onInit(async () => {
 	mouse = new Mouse();
@@ -84,34 +134,46 @@ time.onTick(() => {
 
 	camera.update();
 	camera.aabb = player.aabb;
-	//camera.speed = 1;
-	//const move = CollisionTester.AABBToWorld(camera.aabb, camera.position, world);
-	//vec3.add(camera.position, camera.position, move);
-	//camera.setPosition(move);
-	//camera.update();
+	camera.aabb.setPosition(camera.position);
+	//camera.speed = 4;
 
+	/*/
+	const move = CollisionTester.AABBToWorld(camera.aabb, camera.position, world);
+	camera.setPosition(move);
+	{
+		const fBuffer = new Float32Array(3);
+
+		fBuffer[0] = camera.forward[0] + camera.position[0];
+		fBuffer[1] = camera.forward[1] + camera.position[1];
+		fBuffer[2] = camera.forward[2] + camera.position[2];
+
+		mat4.lookAt(camera.camera, camera.position, fBuffer, camera.up);
+		mat4.multiply(camera.vp, camera.projection, camera.camera);
+	}
+	//*/
 	camera2.update();
 
-	if(mouse.isPressed(Mouse.LEFT_BUTTON) || mouse.isPressed(Mouse.RIGHT_BUTTON)) {
+	if(mouse.isPressed(Mouse.LEFT_BUTTON) || mouse.isPressed(Mouse.RIGHT_BUTTON) || mouse.isPressed(Mouse.WHEEL_BUTTON)) {
 		if(mouseClicked == false) {
 			mouseClicked = true;
 
-			if(mouse.isPressed(Mouse.LEFT_BUTTON)) {
+			if(mouse.isPressed(Mouse.WHEEL_BUTTON)) {
+				const block = playerBlocks[currentPlayerBlockIndex];
+				Action.traceBlockFromCameraRay(world, block, camera);
+			} else if(mouse.isPressed(Mouse.LEFT_BUTTON)) {
 				Action.destroyBlockFromCameraRay(world, camera);
 			} else {
-				const block = new Block();
-				block.isAir = false;
-				//block.id = 16*3 + 1;
-				block.id = 4;
-				//block.isTransparent = true;
-				block.isTransparent = false;
-
+				const block = playerBlocks[currentPlayerBlockIndex];
 				Action.placeBlockFromCameraRay(world, block, camera);
 			}
 		}
 	} else {
 		mouseClicked = false;
 	}
+
+	currentPlayerBlockIndex += mouse.scrollVelY();
+	if(currentPlayerBlockIndex < 0) currentPlayerBlockIndex += playerBlocks.length;
+	currentPlayerBlockIndex = Math.floor(currentPlayerBlockIndex) % playerBlocks.length;
 
 	world.update();
 });
@@ -128,16 +190,22 @@ time.onDraw(() => {
 	camera2.drawView();
 	LRD.draw(camera);
 
-	// Cross pass
+	// UI pass
 	display.disable(Display.DEPTH_TEST);
-	display.blendFunc(Display.ONE_MINUS_DST_COLOR, Display.ONE_MINUS_SRC_ALPHA);
+	
+	blockSelectShader.use();
+	blockSelectShader.sendVec2('screenSize', new Float32Array([display.getWidth(), display.getHeight()]));
+	blockSelectShader.sendFloat('texId', playerBlocks[currentPlayerBlockIndex].id);
+	terrainTexture.use();
+	crossVAO.draw();
 
+	display.blendFunc(Display.ONE_MINUS_DST_COLOR, Display.ONE_MINUS_SRC_ALPHA);
 	crossShader.use();
 	crossShader.sendVec2('screenSize', new Float32Array([display.getWidth(), display.getHeight()]));
 	crossTexture.use();
 	crossVAO.draw();
-
 	display.defaultBlendFunc();
+
 	display.enable(Display.DEPTH_TEST);
 });
 

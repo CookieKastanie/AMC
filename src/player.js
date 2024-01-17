@@ -17,17 +17,18 @@ export class Player {
 
 		this.aabb = new AABB();
 
-		this.aabb.minX = -0.25;
-		this.aabb.maxX = 0.25;
+		this.aabb.originMinX = -0.25;
+		this.aabb.originMaxX = 0.25;
 
-		//this.aabb.minY = -0.05;
-		//this.aabb.maxY = 1.7;
-		this.aabb.minY = -0.25;
-		this.aabb.maxY = 0.25;
+		//this.aabb.originMinY = -0.05;
+		//this.aabb.originMaxY = 1.7;
+		this.aabb.originMinY = -0.25;
+		this.aabb.originMaxY = 0.25;
 
+		this.aabb.originMinZ = -0.25;
+		this.aabb.originMaxZ = 0.25;
 
-		this.aabb.minZ = -0.25;
-		this.aabb.maxZ = 0.25;
+		this.aabb.setPosition([0, 0, 0]);
 
 		this.mouse = new Mouse();
 		this.keyboard = new Keyboard();

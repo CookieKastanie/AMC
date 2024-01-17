@@ -10,6 +10,26 @@ export class AABB {
 
 		this.minZ = Number.MAX_SAFE_INTEGER;
 		this.maxZ = Number.MIN_SAFE_INTEGER;
+
+		this.originMinX = Number.MAX_SAFE_INTEGER;
+		this.originMaxX = Number.MIN_SAFE_INTEGER;
+
+		this.originMinY = Number.MAX_SAFE_INTEGER;
+		this.originMaxY = Number.MIN_SAFE_INTEGER;
+
+		this.originMinZ = Number.MAX_SAFE_INTEGER;
+		this.originMaxZ = Number.MIN_SAFE_INTEGER;
+	}
+
+	setPosition(pos) {
+		this.minX = this.originMinX + pos[0];
+		this.maxX = this.originMaxX + pos[0];
+
+		this.minY = this.originMinY + pos[1];
+		this.maxY = this.originMaxY + pos[1];
+
+		this.minZ = this.originMinZ + pos[2];
+		this.maxZ = this.originMaxZ + pos[2];
 	}
 }
 

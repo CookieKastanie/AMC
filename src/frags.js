@@ -131,3 +131,42 @@ void main(){
 	fragColor = texture(tex, v_uv);
 }`;
 
+
+
+
+
+
+export const BLOCK_SELECT_VS = 
+`#version 300 es
+precision mediump float;
+
+layout(location = 0) in vec2 a_position;
+
+out vec2 v_uv;
+
+uniform vec2 screenSize;
+
+void main(){
+	vec2 pixelPos = a_position * 64.0 + screenSize * vec2(1, -1) + vec2(-64.0, 64.0);
+	gl_Position = vec4(pixelPos / screenSize, 0.0, 1.0);
+	v_uv = (a_position * 0.5 + 0.5) * vec2(1.0, -1.0);
+}`;
+
+export const BLOCK_SELECT_FS = 
+`#version 300 es
+precision mediump float;
+precision mediump sampler2DArray;
+
+in vec2 v_uv;
+
+out vec4 fragColor;
+
+uniform sampler2DArray blocksTextures;
+uniform float texId;
+
+void main(){
+	vec3 color = texture(blocksTextures, vec3(v_uv, texId)).rgb;
+	fragColor = vec4(color, 1.0);
+}`;
+
+
