@@ -32,7 +32,7 @@ export class LRD {
 		LRD.positionVBO.setData(LRD.position);
 		LRD.colorVBO.setData(LRD.color);
 		
-		LRD.vao.draw(LRD.lineCount * 3);
+		LRD.vao.draw(LRD.lineCount * 2);
 	}
 
 	static addLine(from, to, color = LRD.WHITE) {
@@ -191,3 +191,5 @@ LRD.RED = [1, 0, 0];
 LRD.GREEN = [0, 1, 0];
 LRD.BLUE = [0, 0, 1];
 LRD.WHITE = [1, 1, 1];
+
+LRD.YELLOW = [1, 1, 0];

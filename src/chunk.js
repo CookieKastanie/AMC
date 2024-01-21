@@ -1,6 +1,6 @@
 import { Block } from './block';
 
-import { Display, VAO, VBO, AVBO } from 'akila/webgl'
+import { VAO, VBO, AVBO } from 'akila/webgl'
 import { mat4, vec3 } from 'akila/math'
 import { ChunkAABB } from './aabb';
 
@@ -107,7 +107,7 @@ export class Chunk {
 		this.gDataBufferLength = i;
 
 		this.sendToGPU();
-		console.log(this.aabb)
+		this.aabb.setupPoints();
 	}
 
 	addVertices = (world, vArr, io, ox, oy, oz) => {

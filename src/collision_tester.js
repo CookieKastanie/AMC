@@ -1,8 +1,15 @@
-import { vec3 } from 'akila/math';
+import { vec3, vec4 } from 'akila/math';
 import { AABB } from './aabb';
 import { LRD } from './line_debugger_renderer';
 
 const frac = x => x - Math.floor(x);
+const dividBySelfW = (v) => {
+	v[0] = v[0] / v[3];
+	v[1] = v[1] / v[3];
+	v[2] = v[2] / v[3];
+	v[3] = 1;
+	return v;
+}
 
 export class CollisionTester {
 	//static isRangesOverlaps(aMin, aMax, bmin, bMax) { // expect well formed parameters
@@ -98,6 +105,30 @@ export class CollisionTester {
 		//const pv = camera.getVPMatrix();
 		const pv = camera.camera;
 
+		for(let i = 0; i < 8; ++i) {
+			const p = CollisionTester.chunkAABBPoints[i];
+
+			vec4.transformMat4(p, chunkAABB.points[i], pv);
+			//dividBySelfW(p);
+/*
+			if(
+				p[0] <= 1 && p[0] >= -1 &&
+				p[1] <= 1 && p[1] >= -1 &&
+				p[2] <= 1 && p[2] >= -1
+			) {
+				return true;
+			}//*/
+
+			if(p[2] <= 0) {
+				return true;
+			}
+		}
+
+		return false;
+
+
+		
+		/*
 		const minX = pv[0] * chunkAABB.minX + pv[12];
 		const maxX = pv[0] * chunkAABB.maxX + pv[12];
 
@@ -107,11 +138,33 @@ export class CollisionTester {
 		const minZ = pv[10] * chunkAABB.minZ + pv[14];
 		const maxZ = pv[10] * chunkAABB.maxZ + pv[14];
 
+		out[3] = m[3] * x + m[7] * y + m[11] * z + m[15] * w;
+
 		const view = 1;
 		return (
-			CollisionTester.isRangesOverlaps(minX, maxX, -view, view) &&
-			CollisionTester.isRangesOverlaps(minY, maxY, -view, view) &&
+			CollisionTester.isRangesOverlaps(minX, maxX, -view, view) ||
+			CollisionTester.isRangesOverlaps(minY, maxY, -view, view) ||
 			CollisionTester.isRangesOverlaps(minZ, maxZ, -view, view)
+		);*/
+	}
+
+	static isPointInView(point, camera) {
+		const pv = camera.getVPMatrix();
+
+		const p = vec4.create();
+		p[0] = point[0];
+		p[1] = point[1];
+		p[2] = point[2];
+		p[3] = 1;
+
+		vec4.transformMat4(p, p, pv);
+
+		dividBySelfW(p);
+
+		return (
+			p[0] <= 1 && p[0] >= -1 &&
+			p[1] <= 1 && p[1] >= -1 &&
+			p[2] <= 1 && p[2] >= -1
 		);
 	}
 }
@@ -124,6 +177,10 @@ CollisionTester.blockAABB.originMaxY = 1;
 CollisionTester.blockAABB.originMinZ = 0;
 CollisionTester.blockAABB.originMaxZ = 1;
 
+CollisionTester.chunkAABBPoints = [];
+for(let i = 0; i < 8; ++i) {
+	CollisionTester.chunkAABBPoints.push([0, 0, 0, 1]);
+}
 
 /*/
 CollisionTester.swaps = [

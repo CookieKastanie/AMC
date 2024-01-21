@@ -94,9 +94,13 @@ let currentPlayerBlockIndex = 0;
 
 const time = new Time();
 
-//const world = new World(16, 4, 16);
-const world = new World(8, 4, 8);
+//const world = new World(16, 8, 16); // 16
+
+const world = new World(8, 4, 8); // 32
+
 //const world = new World(4, 2, 4);
+
+//const world = new World(32, 16, 32); // 8
 
 time.onInit(async () => {
 	mouse = new Mouse();
@@ -126,11 +130,7 @@ let mouseClicked = false;
 time.onTick(() => {
 	LRD.start();
 
-	if(keyboard.isPressed(Keyboard.KEY_A)) {
-		camera2.position = [...camera.position];
-		camera2.up = [...camera.up];
-		camera2.forward = [...camera.forward];
-	}
+	
 
 	camera.update();
 	camera.aabb = player.aabb;
@@ -151,6 +151,14 @@ time.onTick(() => {
 		mat4.multiply(camera.vp, camera.projection, camera.camera);
 	}
 	//*/
+
+
+
+	if(keyboard.isPressed(Keyboard.KEY_A)) {
+		camera2.position = [...camera.position];
+		camera2.up = [...camera.up];
+		camera2.forward = [...camera.forward];
+	}
 	camera2.update();
 
 	if(mouse.isPressed(Mouse.LEFT_BUTTON) || mouse.isPressed(Mouse.RIGHT_BUTTON) || mouse.isPressed(Mouse.WHEEL_BUTTON)) {
@@ -175,6 +183,17 @@ time.onTick(() => {
 	if(currentPlayerBlockIndex < 0) currentPlayerBlockIndex += playerBlocks.length;
 	currentPlayerBlockIndex = Math.floor(currentPlayerBlockIndex) % playerBlocks.length;
 
+/*
+	player.aabb.setPosition([-10, -10, -10]);
+	
+
+	if(CollisionTester.isPointInView([-10, -10, -10], camera2)) {
+		LRD.addAABB(player.aabb);
+	} else {
+		LRD.addAABB(player.aabb, LRD.RED);
+	}
+
+*/
 	world.update();
 });
 
@@ -184,7 +203,7 @@ time.onDraw(() => {
 	shader.use();
 	shader.sendMat4('VP', camera.getVPMatrix());
 	terrainTexture.use();
-	world.draw(shader, camera2);
+	world.draw(shader, camera);
 	
 	// Debug pass
 	camera2.drawView();
