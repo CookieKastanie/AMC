@@ -153,15 +153,6 @@ export class Chunk {
 			this.gDataBuffer[i++] = (x << 26) | (y << 20) | (z << 14) | (texID << 6) | (uv << 4) | lighting;
 		}
 	}
-
-	draw(shader) {
-		if(this.gDataBufferLength <= 0) {
-			return;
-		}
-
-		shader.sendVec3('chunkPos', this.worldPosition);
-		this.vao.draw(this.gDataBufferLength);
-	}
 }
 
 Chunk.SIZE = 32;

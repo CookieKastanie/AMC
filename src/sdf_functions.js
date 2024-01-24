@@ -43,6 +43,13 @@ export class SDF {
 				b.id = 4;
 				continue;
 			}
+
+			if(Math.hypot(x - 128, y - 35, z - 128) < 15) {
+				const b = world.getBlock(x, y, z);
+				b.isAir = false;
+				b.id = 16;
+				continue;
+			}
 	
 			if(SDF.capsule([x, y, z], [22, 56, 24], [38, 40, 110], 5) < 0) {
 				const b = world.getBlock(x, y, z);
@@ -83,7 +90,7 @@ export class SDF {
 				
 				if(y < 15) { // pierre
 					b.id = 1;
-				} else if(y < 20) { // dable
+				} else if(y < 20) { // sable
 					b.id = 18;
 				} else { // terre
 					b.id = 2;

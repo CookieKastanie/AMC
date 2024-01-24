@@ -10,31 +10,20 @@ import { TrackBallCamera, FirstPersonCamera, Infos, Camera } from 'akila/utils'
 import { TERRAIN_IMG_DATA } from './terrain_image_data'
 import { CROSS_IMAGE_DATA } from './cross_image_data'
 
-import { TERRAIN_OPAQUE_VS, TERRAIN_OPAQUE_FS, CROSS_VS, CROSS_FS, BLOCK_SELECT_VS, BLOCK_SELECT_FS } from './frags'
 import { Block } from './block'
 import { SDF } from './sdf_functions'
 import { LRD } from './line_debugger_renderer'
 import { mat4, vec3, vec4 } from 'akila/math'
 import { Player } from './player'
 import { CollisionTester } from './collision_tester'
-import { DebugCamera } from './debug_camera'
 import { TextureLoader } from './texture_loader'
+import { TerrainRenderer } from './terrain_renderer'
+import { UIRenderer } from './ui_renderer'
 
 
 //const display = new Display(1280, 720, {webGLVersion: 2});
 const display = new Display(Infos.getFullScreenWidth(), Infos.getFullScreenHeight(), {webGLVersion: 2});
 display.setClearColor(0.259, 0.647, 0.961);
-
-const crossVAO = new VAO(VAO.TRIANGLE_FAN);
-crossVAO.addVBO(new VBO([-1, -1, 1, -1, 1, 1, -1, 1], 2, 0));
-const crossShader = new Shader(CROSS_VS, CROSS_FS);
-
-const blockSelectShader = new Shader(BLOCK_SELECT_VS, BLOCK_SELECT_FS);
-
-let terrainTexture;
-let crossTexture;
-
-const shader = new Shader(TERRAIN_OPAQUE_VS, TERRAIN_OPAQUE_FS);
 
 let mouse;
 let keyboard;
@@ -103,6 +92,9 @@ const world = new World(8, 4, 8); // 32
 //const world = new World(32, 16, 32); // 8
 
 time.onInit(async () => {
+	TerrainRenderer.init();
+	UIRenderer.init();
+
 	mouse = new Mouse();
 	keyboard = new Keyboard();
 
@@ -111,7 +103,7 @@ time.onInit(async () => {
 	camera = new FirstPersonCamera(display.getWidth(), display.getHeight(), {near: 0.1, far: 400, fovy: Math.PI / 2.5});
 	//camera.setPosition([128, 50, 0]);
 
-	camera2 = new DebugCamera(display.getWidth(), display.getHeight(), {near: 0.1, far: 10, fovy: Math.PI / 2.5});
+	camera2 = new Camera(display.getWidth(), display.getHeight(), {near: 0.1, far: 10, fovy: Math.PI / 2.5});
 	//camera2.position = new Float32Array([128, 50, 0]);
 
 	const loadingResult = await Promise.all([
@@ -120,8 +112,9 @@ time.onInit(async () => {
 		new Promise(resolve => {SDF.fillWorld(world); resolve();})
 	]);
 
-	terrainTexture = loadingResult[0];
-	crossTexture = loadingResult[1];
+	TerrainRenderer.terrainTexture = loadingResult[0];
+	UIRenderer.terrainTexture = loadingResult[0];
+	UIRenderer.crossTexture = loadingResult[1];
 
 	world.buildAll();
 });
@@ -129,8 +122,6 @@ time.onInit(async () => {
 let mouseClicked = false;
 time.onTick(() => {
 	LRD.start();
-
-	
 
 	camera.update();
 	camera.aabb = player.aabb;
@@ -160,6 +151,7 @@ time.onTick(() => {
 		camera2.forward = [...camera.forward];
 	}
 	camera2.update();
+	LRD.addCameraView(camera2);
 
 	if(mouse.isPressed(Mouse.LEFT_BUTTON) || mouse.isPressed(Mouse.RIGHT_BUTTON) || mouse.isPressed(Mouse.WHEEL_BUTTON)) {
 		if(mouseClicked == false) {
@@ -198,34 +190,9 @@ time.onTick(() => {
 });
 
 time.onDraw(() => {
-	// World pass
-	display.clear();
-	shader.use();
-	shader.sendMat4('VP', camera.getVPMatrix());
-	terrainTexture.use();
-	world.draw(shader, camera);
-	
-	// Debug pass
-	camera2.drawView();
+	TerrainRenderer.drawWorld(display, world, camera);
 	LRD.draw(camera);
-
-	// UI pass
-	display.disable(Display.DEPTH_TEST);
-	
-	blockSelectShader.use();
-	blockSelectShader.sendVec2('screenSize', new Float32Array([display.getWidth(), display.getHeight()]));
-	blockSelectShader.sendFloat('texId', playerBlocks[currentPlayerBlockIndex].id);
-	terrainTexture.use();
-	crossVAO.draw();
-
-	display.blendFunc(Display.ONE_MINUS_DST_COLOR, Display.ONE_MINUS_SRC_ALPHA);
-	crossShader.use();
-	crossShader.sendVec2('screenSize', new Float32Array([display.getWidth(), display.getHeight()]));
-	crossTexture.use();
-	crossVAO.draw();
-	display.defaultBlendFunc();
-
-	display.enable(Display.DEPTH_TEST);
+	UIRenderer.draw(display, playerBlocks[currentPlayerBlockIndex].id);
 });
 
 time.start();
