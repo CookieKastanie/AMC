@@ -7,20 +7,20 @@ export class Block {
 		//this.lightFactors = [0, 0, 0, 0, 0, 0];
 	}
 
-	static getVertices() {
-		return Block.VERTICES;
+	static getGeometry() {
+		return Block.GEOMETRY;
 	}
 
-	static getSwaps() {
-		return Block.SWAPS;
+	static getOffsets() {
+		return Block.OFFSETS;
 	}
 }
 
-Block.VERTICES = {
+Block.GEOMETRY = {
 	faces: [
 		{
-			face: 'top',
-			verts: [
+			name: 'top',
+			position: [
 				[0, 1, 0], [1, 1, 1], [1, 1, 0],
 				[0, 1, 0], [0, 1, 1], [1, 1, 1]
 			],
@@ -31,8 +31,8 @@ Block.VERTICES = {
 			lighting: 15
 		},
 		{
-			face: 'front',
-			verts: [
+			name: 'front',
+			position: [
 				[1, 1, 1], [0, 0, 1], [1, 0, 1],
 				[1, 1, 1], [0, 1, 1], [0, 0, 1]
 			],
@@ -43,8 +43,8 @@ Block.VERTICES = {
 			lighting: 14
 		},
 		{
-			face: 'left',
-			verts: [
+			name: 'left',
+			position: [
 				[0, 1, 1], [0, 0, 0], [0, 0, 1],
 				[0, 1, 1], [0, 1, 0], [0, 0, 0]
 			],
@@ -55,8 +55,8 @@ Block.VERTICES = {
 			lighting: 12
 		},
 		{
-			face: 'bot',
-			verts: [
+			name: 'bot',
+			position: [
 				[1, 0, 0], [0, 0, 1], [0, 0, 0],
 				[1, 0, 0], [1, 0, 1], [0, 0, 1]
 			],
@@ -67,8 +67,8 @@ Block.VERTICES = {
 			lighting: 10
 		},
 		{
-			face: 'right',
-			verts: [
+			name: 'right',
+			position: [
 				[1, 1, 0], [1, 0, 1], [1, 0, 0],
 				[1, 1, 0], [1, 1, 1], [1, 0, 1]
 			],
@@ -79,8 +79,8 @@ Block.VERTICES = {
 			lighting: 13
 		},
 		{
-			face: 'back',
-			verts: [
+			name: 'back',
+			position: [
 				[0, 1, 0], [1, 0, 0], [0, 0, 0],
 				[0, 1, 0], [1, 1, 0], [1, 0, 0]
 			],
@@ -95,7 +95,7 @@ Block.VERTICES = {
 	length: 3 * 2 * 6
 }
 
-Block.SWAPS = [
+Block.OFFSETS = [
 	[0, 1, 0],
 	[0, 0, 1],
 	[-1, 0, 0],

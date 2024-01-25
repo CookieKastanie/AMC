@@ -56,7 +56,7 @@ const playerBlocks = [
 	}
 ];
 
-for(let i = 0; i < 4; ++i) {
+for(let i = 0; i < 5; ++i) {
 	playerBlocks.push({
 		isAir: false,
 		id: 16 + i,
@@ -64,7 +64,7 @@ for(let i = 0; i < 4; ++i) {
 	});
 }
 
-for(let i = 0; i < 3; ++i) {
+for(let i = 0; i < 16; ++i) {
 	playerBlocks.push({
 		isAir: false,
 		id: 16 * 2 + i,

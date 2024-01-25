@@ -7,6 +7,7 @@ layout(location = 0) in uint a_vertexData;
 flat out float v_texId;
 out vec2 v_uv;
 out float v_lighting;
+out vec3 v_worldPos;
 
 uniform vec3 chunkPos;
 uniform mat4 VP;
@@ -22,7 +23,8 @@ void main(){
 	uint uv       = (a_vertexData & 0x00000030u) >> 4u;
 	uint lighting =  a_vertexData & 0x0000000Fu;
 
-	gl_Position = VP * vec4(pos + chunkPos, 1.0);
+	v_worldPos = pos + chunkPos;
+	gl_Position = VP * vec4(v_worldPos, 1.0);
 
 	v_texId = float(texId);
 	v_uv = vec2(
@@ -40,15 +42,26 @@ precision mediump sampler2DArray;
 flat in float v_texId;
 in vec2 v_uv;
 in float v_lighting;
+in vec3 v_worldPos;
 
 out vec4 fragColor;
 
 uniform sampler2DArray blocksTextures;
 uniform vec3 tint;
+uniform vec3 cameraWorldPos;
+
+float getFog() {
+	float cameraToPixelDist = length(v_worldPos - cameraWorldPos);
+	float gFogEnd = 35.0;
+	float distRatio = 4.0 - cameraToPixelDist / gFogEnd;
+	float gExpFogDensity = 2.0;
+	return clamp(exp(-distRatio * gExpFogDensity), 0.0, 1.0);
+}
 
 void main(){
 	vec3 color = texture(blocksTextures, vec3(v_uv, v_texId)).rgb;
 	fragColor = vec4(tint * color * v_lighting, 1.0);
+	fragColor.rgb = mix(fragColor.rgb, vec3(0.259, 0.647, 0.961), getFog());
 
 	/*/
 	vec4 color = texture(blocksTextures, vec3(v_uv, v_texId));

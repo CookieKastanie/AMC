@@ -15,6 +15,7 @@ export class TerrainRenderer {
 
 		TerrainRenderer.opaquerShader.use();
 		TerrainRenderer.opaquerShader.sendMat4('VP', camera.getVPMatrix());
+		TerrainRenderer.opaquerShader.sendVec3('cameraWorldPos', camera.getPosition());
 		TerrainRenderer.terrainTexture.use();
 
 		// draw world
@@ -54,12 +55,12 @@ export class TerrainRenderer {
 			}
 
 			// draw chunk
-			if(chunk.gDataBufferLength <= 0) {
+			if(chunk.gDataBuffer.getCount() <= 0) {
 				continue;
 			}
 	
 			TerrainRenderer.opaquerShader.sendVec3('chunkPos', chunk.worldPosition);
-			chunk.vao.draw(chunk.gDataBufferLength);
+			chunk.gDataBuffer.draw();
 		}
 	}
 }

@@ -3,6 +3,7 @@ import { Block } from './block';
 import { VAO, VBO, AVBO } from 'akila/webgl'
 import { mat4, vec3 } from 'akila/math'
 import { ChunkAABB } from './aabb';
+import { DynamicGBuffer } from './dynamic_gbuffer';
 
 /*
 
@@ -19,45 +20,19 @@ export class Chunk {
 		this.y = y;
 		this.z = z;
 
-		this.wx = this.x * Chunk.SIZE;
-		this.wy = this.y * Chunk.SIZE;
-		this.wz = this.z * Chunk.SIZE;
-
 		this.aabb = new ChunkAABB();
 
-		//this.matWorldPos = mat4.identity(mat4.create());
-		//mat4.translate(this.matWorldPos, this.matWorldPos, [this.wx, this.wy, this.wz]);
 		this.worldPosition = vec3.create();
-		this.worldPosition[0] = this.wx;
-		this.worldPosition[1] = this.wy;
-		this.worldPosition[2] = this.wz;
+		this.worldPosition[0] = this.x * Chunk.SIZE;
+		this.worldPosition[1] = this.y * Chunk.SIZE;
+		this.worldPosition[2] = this.z * Chunk.SIZE;
 
 		this.data = new Array(Chunk.SIZE * Chunk.SIZE * Chunk.SIZE);
 		for(let i = 0; i < this.data.length; ++i) {
 			this.data[i] = new Block();
 		}
 
-		this.maxBufferSize = this.data.length * Block.getVertices().length;
-
-		//this.gDataBuffer = new Int32Array((this.data.length / Chunk.SIZE) * Block.getVertices().length);
-		this.gDataBuffer = new Int32Array(Chunk.SIZE * Block.getVertices().length);
-		this.gDataBufferLength = 0;
-
-		this.initVAO();
-	}
-
-	initVAO() {
-		this.dataVBO = new AVBO(null, VBO.DYNAMIC_DRAW);
-		this.dataVBO.addVertexAttribute(1, 0, 0, 0, AVBO.UNSIGNED_INT);
-		this.vao = new VAO().addVBO(this.dataVBO);
-	}
-
-	sendToGPU() {
-		if(this.vao === null) {
-			this.initVAO();
-		}
-
-		this.dataVBO.setData(this.gDataBuffer);
+		this.gDataBuffer = new DynamicGBuffer(Chunk.SIZE * Block.getGeometry().length);
 	}
 
 	getBlock(x, y, z) {
@@ -66,91 +41,75 @@ export class Chunk {
 
 	build(world) {
 		this.aabb.setToInfinity();
+		this.gDataBuffer.begin();
 
-		let i = 0;
-		for(let iz = 0; iz < Chunk.SIZE; ++iz)
-		for(let iy = 0; iy < Chunk.SIZE; ++iy)
-		for(let ix = 0; ix < Chunk.SIZE; ++ix) {
-			const x = this.wx + ix;
-			const y = this.wy + iy;
-			const z = this.wz + iz;
+		for(let chunkZ = 0; chunkZ < Chunk.SIZE; ++chunkZ)
+		for(let chunkY = 0; chunkY < Chunk.SIZE; ++chunkY)
+		for(let chunkX = 0; chunkX < Chunk.SIZE; ++chunkX) {
+			const x = this.worldPosition[0] + chunkX;
+			const y = this.worldPosition[1] + chunkY;
+			const z = this.worldPosition[2] + chunkZ;
 
-			const block = this.getBlock(ix, iy, iz);
+			const block = this.getBlock(chunkX, chunkY, chunkZ);
 			if(block.isAir) {
 				continue;
 			}
 
 			this.aabb.trySetMinMax(x, y, z);
 
-			const verts = Block.getVertices();
-			const swaps = Block.getSwaps();
+			const blockGeometry = Block.getGeometry();
+			const offsets = Block.getOffsets();
 
-			for(let j = 0; j < swaps.length; ++j) {
-				const s = swaps[j];
-				const v = verts.faces[j];
+			for(let j = 0; j < offsets.length; ++j) {
+				const offset = offsets[j];
+				const face = blockGeometry.faces[j];
 
-				const neighborBlock = world.getBlock(x + s[0], y + s[1], z + s[2]);
+				const neighborBlock = world.getBlock(x + offset[0], y + offset[1], z + offset[2]);
 				if(neighborBlock.isAir || (neighborBlock.isTransparent && block.isTransparent == false)) {
-					this.addVertices(world, v, i, ix, iy, iz); i += verts.length;
+					this.addVertices(world, face, chunkX, chunkY, chunkZ);
 				}
 			}
 		}
 
-		if(this.gDataBuffer.length > (i * 2)) { // slice buffer if too big
-			this.gDataBuffer = this.gDataBuffer.slice(0, this.gDataBuffer.length / 2);
-			if(this.vao !== null) {
-				this.vao.delete();
-				this.vao = null;
-			}
-		}
-
-		this.gDataBufferLength = i;
-
-		this.sendToGPU();
+		this.gDataBuffer.end();
 		this.aabb.setupPoints();
 	}
 
-	addVertices = (world, vArr, io, ox, oy, oz) => {
-		let i = io;
-		for(let vi = 0; vi < vArr.verts.length; ++vi) {
-			const x = vArr.verts[vi][0] + ox;
-			const y = vArr.verts[vi][1] + oy;
-			const z = vArr.verts[vi][2] + oz;
+	addVertices = (world, face, chunkX, chunkY, chunkZ) => {
+		for(let vi = 0; vi < face.position.length; ++vi) {
+			const x = face.position[vi][0] + chunkX;
+			const y = face.position[vi][1] + chunkY;
+			const z = face.position[vi][2] + chunkZ;
 	
-			const u = vArr.uv[vi][0];
-			const v = vArr.uv[vi][1];
+			const u = face.uv[vi][0];
+			const v = face.uv[vi][1];
 	
-			let texID = this.getBlock(ox, oy, oz).id;
+			let texID = this.getBlock(chunkX, chunkY, chunkZ).id;
 
 			{ // grass
-				if(texID === 2 && world.getBlock(this.wx + ox, this.wy + oy + 1, this.wz + oz).isAir) {
-					if(vArr.face === 'top') {
+				if(texID === 2 && world.getBlock(this.worldPosition[0] + chunkX, this.worldPosition[1] + chunkY + 1, this.worldPosition[2] + chunkZ).isAir) {
+					if(face.name === 'top') {
 						texID = 0;	
-					} else if(vArr.face !== 'bot') {
+					} else if(face.name !== 'bot') {
 						texID = 3;
+					}
+				}
+
+				if(texID === (16 + 4)) { // wood log
+					if(face.name === 'top' || face.name === 'bot') {
+						texID = 16 + 5;	
 					}
 				}
 			}
 
 
 			const uv = (u << 1) | v;
-			const lighting = vArr.lighting;
+			const lighting = face.lighting;
 			//const lighting = 0xF;
 			//const lighting = (0xF * this.y) / 4;
 			//const lighting = Math.floor(Math.random() * 0xF);
-
-			if(this.gDataBuffer.length <= i) { // grow buffer if needed
-				const old = this.gDataBuffer;
-				this.gDataBuffer = new Int32Array(old.length * 2);
-				this.gDataBuffer.set(old);
-
-				if(this.vao !== null) {
-					this.vao.delete();
-					this.vao = null;
-				}
-			}
 	
-			this.gDataBuffer[i++] = (x << 26) | (y << 20) | (z << 14) | (texID << 6) | (uv << 4) | lighting;
+			this.gDataBuffer.add((x << 26) | (y << 20) | (z << 14) | (texID << 6) | (uv << 4) | lighting);
 		}
 	}
 }
