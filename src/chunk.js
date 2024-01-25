@@ -27,9 +27,9 @@ export class Chunk {
 		this.worldPosition[1] = this.y * Chunk.SIZE;
 		this.worldPosition[2] = this.z * Chunk.SIZE;
 
-		this.data = new Array(Chunk.SIZE * Chunk.SIZE * Chunk.SIZE);
+		this.data = new Uint8Array(Chunk.SIZE * Chunk.SIZE * Chunk.SIZE);
 		for(let i = 0; i < this.data.length; ++i) {
-			this.data[i] = new Block();
+			this.data[i] = 0;
 		}
 
 		this.gDataBuffer = new DynamicGBuffer(Chunk.SIZE * Block.getGeometry().length);
@@ -37,6 +37,10 @@ export class Chunk {
 
 	getBlock(x, y, z) {
 		return this.data[x + Chunk.SIZE * (y + Chunk.SIZE * z)];
+	}
+
+	setBlock(x, y, z, id) {
+		this.data[x + Chunk.SIZE * (y + Chunk.SIZE * z)] = id;
 	}
 
 	build(world) {
@@ -50,8 +54,9 @@ export class Chunk {
 			const y = this.worldPosition[1] + chunkY;
 			const z = this.worldPosition[2] + chunkZ;
 
-			const block = this.getBlock(chunkX, chunkY, chunkZ);
-			if(block.isAir) {
+			const blockId = this.getBlock(chunkX, chunkY, chunkZ);
+			const BlockMeta = Block.getMetaData(blockId);
+			if(blockId === 0) {
 				continue;
 			}
 
@@ -64,9 +69,10 @@ export class Chunk {
 				const offset = offsets[j];
 				const face = blockGeometry.faces[j];
 
-				const neighborBlock = world.getBlock(x + offset[0], y + offset[1], z + offset[2]);
-				if(neighborBlock.isAir || (neighborBlock.isTransparent && block.isTransparent == false)) {
-					this.addVertices(world, face, chunkX, chunkY, chunkZ);
+				const neighborBlockId = world.getBlock(x + offset[0], y + offset[1], z + offset[2]);
+				const neighborBlockMeta = Block.getMetaData(neighborBlockId);
+				if(neighborBlockId === 0 || (neighborBlockMeta.isTransparent && BlockMeta.isTransparent == false)) {
+					this.addVertices(BlockMeta, face, chunkX, chunkY, chunkZ);
 				}
 			}
 		}
@@ -75,41 +81,28 @@ export class Chunk {
 		this.aabb.setupPoints();
 	}
 
-	addVertices = (world, face, chunkX, chunkY, chunkZ) => {
-		for(let vi = 0; vi < face.position.length; ++vi) {
-			const x = face.position[vi][0] + chunkX;
-			const y = face.position[vi][1] + chunkY;
-			const z = face.position[vi][2] + chunkZ;
+	addVertices = (BlockMeta, face, chunkX, chunkY, chunkZ) => {
+		for(let i = 0; i < face.position.length; ++i) {
+			const x = face.position[i][0] + chunkX;
+			const y = face.position[i][1] + chunkY;
+			const z = face.position[i][2] + chunkZ;
 	
-			const u = face.uv[vi][0];
-			const v = face.uv[vi][1];
-	
-			let texID = this.getBlock(chunkX, chunkY, chunkZ).id;
+			const u = face.uv[i][0];
+			const v = face.uv[i][1];
 
-			{ // grass
-				if(texID === 2 && world.getBlock(this.worldPosition[0] + chunkX, this.worldPosition[1] + chunkY + 1, this.worldPosition[2] + chunkZ).isAir) {
-					if(face.name === 'top') {
-						texID = 0;	
-					} else if(face.name !== 'bot') {
-						texID = 3;
-					}
-				}
-
-				if(texID === (16 + 4)) { // wood log
-					if(face.name === 'top' || face.name === 'bot') {
-						texID = 16 + 5;	
-					}
-				}
+			let texId = 0;
+			if(face.name === 'top') {
+				texId = BlockMeta.textureIds[0];
+			} else if(face.name === 'bot') {
+				texId = BlockMeta.textureIds[2];
+			} else {
+				texId = BlockMeta.textureIds[1];
 			}
-
 
 			const uv = (u << 1) | v;
 			const lighting = face.lighting;
-			//const lighting = 0xF;
-			//const lighting = (0xF * this.y) / 4;
-			//const lighting = Math.floor(Math.random() * 0xF);
 	
-			this.gDataBuffer.add((x << 26) | (y << 20) | (z << 14) | (texID << 6) | (uv << 4) | lighting);
+			this.gDataBuffer.add((x << 26) | (y << 20) | (z << 14) | (texId << 6) | (uv << 4) | lighting);
 		}
 	}
 }

@@ -11,7 +11,6 @@ export class World {
 		this.sizeZ = sizeZ;
 		this.chunks = new Array(sizeX * sizeY * sizeZ);
 
-		this.nullBlock = new Block();
 		this.buildList = new Array();
 
 		let i = 0;
@@ -80,8 +79,7 @@ export class World {
 
 	getBlock(x, y, z) {
 		if(x < 0 || x >= this.getXSizeBlockCount() || y < 0 || y >= this.getYSizeBlockCount() || z < 0 || z >= this.getZSizeBlockCount()) {
-			this.nullBlock.isAir = true;
-			return this.nullBlock;
+			return 0;
 		}
 
 		return this.getChunk(
@@ -92,6 +90,23 @@ export class World {
 			x % Chunk.SIZE,
 			y % Chunk.SIZE,
 			z % Chunk.SIZE
+		);
+	}
+
+	setBlock(x, y, z, id) {
+		if(x < 0 || x >= this.getXSizeBlockCount() || y < 0 || y >= this.getYSizeBlockCount() || z < 0 || z >= this.getZSizeBlockCount()) {
+			return;
+		}
+
+		return this.getChunk(
+			Math.floor(x / Chunk.SIZE),
+			Math.floor(y / Chunk.SIZE),
+			Math.floor(z / Chunk.SIZE)
+		).setBlock(
+			x % Chunk.SIZE,
+			y % Chunk.SIZE,
+			z % Chunk.SIZE,
+			id
 		);
 	}
 

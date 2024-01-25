@@ -26,57 +26,47 @@ export class SDF {
 		const noise3D = createNoise3D();
 
 		for(let z = 0; z < world.getZSizeBlockCount(); ++z)
-		for(let y = 0; y < world.getYSizeBlockCount(); ++y)
+		//for(let y = 0; y < world.getYSizeBlockCount(); ++y)
+		for(let y = world.getYSizeBlockCount() - 1; y >= 0; --y)
 		for(let x = 0; x < world.getXSizeBlockCount(); ++x) {
 			const surface = (noise2D(x * 0.015, z * 0.015) * .5 + .5) * 23 + 15;
 			const cave = noise3D(x * 0.05, y * 0.05, z * 0.05) * .5 + .5;
 	
 			if(y == 56 && (x < stamp.length) && (z < stamp[0].length)) {
-				const b = world.getBlock(x + 55, 60, z + 58);
-				b.isAir = stamp[x][z] == 0;
-				b.id = 16*3;
+
+				if(stamp[x][z] !== 0) {
+					world.setBlock(x + 55, 60, z + 58, 27);
+				}
 			}
 	
 			if(Math.hypot(x - 57, y - 35, z - 62) < 25) {
-				const b = world.getBlock(x, y, z);
-				b.isAir = false;
-				b.id = 4;
+				world.setBlock(x, y, z, 4);
 				continue;
 			}
 
 			if(Math.hypot(x - 128, y - 35, z - 128) < 15) {
-				const b = world.getBlock(x, y, z);
-				b.isAir = false;
-				b.id = 16;
+				world.setBlock(x, y, z, 5);
 				continue;
 			}
 	
 			if(SDF.capsule([x, y, z], [22, 56, 24], [38, 40, 110], 5) < 0) {
-				const b = world.getBlock(x, y, z);
-				b.isAir = false;
-				b.id = Math.floor(Math.random() * 16 + 16*4);
+				world.setBlock(x, y, z, Math.floor(Math.random() * 16 + 29));
 				continue;
 			}
 	
 			if(SDF.capsule([x, y, z], [38, 40, 110], [112, 30, 48], 5) < 0) {
-				const b = world.getBlock(x, y, z);
-				b.isAir = false;
-				b.id = Math.floor(Math.random() * 16 + 16*4);
+				world.setBlock(x, y, z, Math.floor(Math.random() * 16 + 29));
 				continue;
 			}
 	
 			if(SDF.capsule([x, y, z], [22, 56, 24], [112, 30, 48], 5) < 0) {
-				const b = world.getBlock(x, y, z);
-				b.isAir = false;
-				b.id = Math.floor(Math.random() * 16 + 16*4);
+				world.setBlock(x, y, z, Math.floor(Math.random() * 16 + 29));
 				continue;
 			}
 	
 			// terrain
 			if(y == 0) { // bedrock
-				const b = world.getBlock(x, y, z);
-				b.isAir = false;
-				b.id = 17;
+				world.setBlock(x, y, z, 6);
 				continue;
 			}
 	
@@ -84,16 +74,17 @@ export class SDF {
 				if(cave < 0.3) { // rayon des caves
 					continue;
 				}
-	
-				const b = world.getBlock(x, y, z);
-				b.isAir = false;
 				
 				if(y < 15) { // pierre
-					b.id = 1;
+					world.setBlock(x, y, z, 2);
 				} else if(y < 20) { // sable
-					b.id = 18;
+					world.setBlock(x, y, z, 7);
 				} else { // terre
-					b.id = 2;
+					if(world.getBlock(x, y + 1, z) === 0) {
+						world.setBlock(x, y, z, 1);
+					} else {
+						world.setBlock(x, y, z, 3);
+					}
 				}
 			}
 		}

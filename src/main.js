@@ -33,53 +33,7 @@ let camera2;
 
 let player;
 
-const playerBlocks = [
-	{
-		isAir: false,
-		id: 1,
-		isTransparent: false
-	},
-	{
-		isAir: false,
-		id: 2,
-		isTransparent: false
-	},
-	{
-		isAir: false,
-		id: 4,
-		isTransparent: false
-	},
-	{
-		isAir: false,
-		id: 16 * 3,
-		isTransparent: false
-	}
-];
-
-for(let i = 0; i < 5; ++i) {
-	playerBlocks.push({
-		isAir: false,
-		id: 16 + i,
-		isTransparent: false
-	});
-}
-
-for(let i = 0; i < 16; ++i) {
-	playerBlocks.push({
-		isAir: false,
-		id: 16 * 2 + i,
-		isTransparent: false
-	});
-}
-
-for(let i = 0; i < 16; ++i) {
-	playerBlocks.push({
-		isAir: false,
-		id: 16 * 4 + i,
-		isTransparent: false
-	});
-}
-let currentPlayerBlockIndex = 0;
+let currentPlayerBlockId = 0;
 
 const time = new Time();
 
@@ -158,22 +112,20 @@ time.onTick(() => {
 			mouseClicked = true;
 
 			if(mouse.isPressed(Mouse.WHEEL_BUTTON)) {
-				const block = playerBlocks[currentPlayerBlockIndex];
-				Action.traceBlockFromCameraRay(world, block, camera);
+				Action.traceBlockFromCameraRay(world, currentPlayerBlockId, camera);
 			} else if(mouse.isPressed(Mouse.LEFT_BUTTON)) {
 				Action.destroyBlockFromCameraRay(world, camera);
 			} else {
-				const block = playerBlocks[currentPlayerBlockIndex];
-				Action.placeBlockFromCameraRay(world, block, camera);
+				Action.placeBlockFromCameraRay(world, currentPlayerBlockId, camera);
 			}
 		}
 	} else {
 		mouseClicked = false;
 	}
 
-	currentPlayerBlockIndex += mouse.scrollVelY();
-	if(currentPlayerBlockIndex < 0) currentPlayerBlockIndex += playerBlocks.length;
-	currentPlayerBlockIndex = Math.floor(currentPlayerBlockIndex) % playerBlocks.length;
+	currentPlayerBlockId += Math.sign(mouse.scrollVelY());
+	if(currentPlayerBlockId < 0) currentPlayerBlockId += Block.MAPPING.length;
+	currentPlayerBlockId = Math.floor(currentPlayerBlockId) % Block.MAPPING.length;
 
 /*
 	player.aabb.setPosition([-10, -10, -10]);
@@ -192,7 +144,7 @@ time.onTick(() => {
 time.onDraw(() => {
 	TerrainRenderer.drawWorld(display, world, camera);
 	LRD.draw(camera);
-	UIRenderer.draw(display, playerBlocks[currentPlayerBlockIndex].id);
+	UIRenderer.draw(display, Block.getMetaData(currentPlayerBlockId).textureIds[1]);
 });
 
 time.start();

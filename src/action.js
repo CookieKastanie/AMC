@@ -2,7 +2,7 @@ import { vec3 } from 'akila/math'
 import { gridRaycast3d } from './grid_raycast3d'
 
 export class Action {
-	static traceBlockFromCameraRay(world, block, camera, raylength = 64) {
+	static traceBlockFromCameraRay(world, blockId, camera, raylength = 64) {
 		let start = vec3.clone(camera.getPosition());
 		let end = vec3.create();
 
@@ -16,10 +16,7 @@ export class Action {
 
 		const chunkSet = new Set();
 		for(let pos of gridRaycast3d(...start, ...end)) {
-			const b = world.getBlock(...pos);
-			b.isAir = block.isAir;
-			b.id = block.id;
-			b.isTransparent = block.isTransparent;
+			world.setBlock(...pos, blockId);
 
 			const chunks = world.getChunksThatTouchBlockPosition(...pos);
 			for(const chunk of chunks) {
@@ -32,7 +29,7 @@ export class Action {
 		}
 	}
 
-	static placeBlockFromCameraRay(world, newBlock, camera, raylength = 7) {
+	static placeBlockFromCameraRay(world, newBlockId, camera, raylength = 7) {
 		let start = vec3.clone(camera.getPosition());
 		let end = vec3.create();
 
@@ -41,20 +38,18 @@ export class Action {
 
 		///
 
-		let prev = null;
+		let prevId = null;
 		let prevPos = null;
 		for(let pos of gridRaycast3d(...start, ...end)) {
-			const block = world.getBlock(...pos);
+			const blockId = world.getBlock(...pos);
 
-			if(prev !== null && prev.isAir && block.isAir == false) {
+			if(prevId === 0 && blockId !== 0) {
 				vec3.floor(start, start);
 				if(vec3.equals(prevPos, start)) { // todo replace by player aabb
 					break;
 				}
 
-				prev.isAir = newBlock.isAir;
-				prev.id = newBlock.id;
-				prev.isTransparent = newBlock.isTransparent;
+				world.setBlock(...prevPos, newBlockId);
 
 				const chunks = world.getChunksThatTouchBlockPosition(...prevPos);
 				for(const chunk of chunks) {
@@ -64,7 +59,7 @@ export class Action {
 				break;
 			}
 
-			prev = block;
+			prevId = blockId;
 			prevPos = pos;
 		}
 	}
@@ -79,9 +74,9 @@ export class Action {
 		///
 
 		for(let pos of gridRaycast3d(...start, ...end)) {
-			const block = world.getBlock(...pos);
-			if(block.isAir == false) {
-				block.isAir = true;
+			const blockId = world.getBlock(...pos);
+			if(blockId !== 0) {
+				world.setBlock(...pos, 0);
 				
 				const chunks = world.getChunksThatTouchBlockPosition(...pos);
 				for(const chunk of chunks) {
