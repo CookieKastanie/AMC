@@ -32,7 +32,8 @@ export class Chunk {
 			this.data[i] = 0;
 		}
 
-		this.gDataBuffer = new DynamicGBuffer(Chunk.SIZE * Block.getGeometry().length);
+		this.gOpaqueDataBuffer = new DynamicGBuffer(Chunk.SIZE * Block.getGeometry().length);
+		this.gAlphaMaskDataBuffer = new DynamicGBuffer(Chunk.SIZE * Block.getGeometry().length);
 	}
 
 	getBlock(x, y, z) {
@@ -45,7 +46,8 @@ export class Chunk {
 
 	build(world) {
 		this.aabb.setToInfinity();
-		this.gDataBuffer.begin();
+		this.gOpaqueDataBuffer.begin();
+		this.gAlphaMaskDataBuffer.begin();
 
 		for(let chunkZ = 0; chunkZ < Chunk.SIZE; ++chunkZ)
 		for(let chunkY = 0; chunkY < Chunk.SIZE; ++chunkY)
@@ -55,7 +57,7 @@ export class Chunk {
 			const z = this.worldPosition[2] + chunkZ;
 
 			const blockId = this.getBlock(chunkX, chunkY, chunkZ);
-			const BlockMeta = Block.getMetaData(blockId);
+			const blockMeta = Block.getMetaData(blockId);
 			if(blockId === 0) {
 				continue;
 			}
@@ -71,17 +73,18 @@ export class Chunk {
 
 				const neighborBlockId = world.getBlock(x + offset[0], y + offset[1], z + offset[2]);
 				const neighborBlockMeta = Block.getMetaData(neighborBlockId);
-				if(neighborBlockId === 0 || (neighborBlockMeta.isTransparent && BlockMeta.isTransparent == false)) {
-					this.addVertices(BlockMeta, face, chunkX, chunkY, chunkZ);
+				if(neighborBlockId === 0 || (neighborBlockMeta.isTransparent && blockMeta.isTransparent == false)) {
+					this.addVertices(blockMeta, face, chunkX, chunkY, chunkZ);
 				}
 			}
 		}
 
-		this.gDataBuffer.end();
+		this.gAlphaMaskDataBuffer.end();
+		this.gOpaqueDataBuffer.end();
 		this.aabb.setupPoints();
 	}
 
-	addVertices = (BlockMeta, face, chunkX, chunkY, chunkZ) => {
+	addVertices = (blockMeta, face, chunkX, chunkY, chunkZ) => {
 		for(let i = 0; i < face.position.length; ++i) {
 			const x = face.position[i][0] + chunkX;
 			const y = face.position[i][1] + chunkY;
@@ -92,17 +95,21 @@ export class Chunk {
 
 			let texId = 0;
 			if(face.name === 'top') {
-				texId = BlockMeta.textureIds[0];
+				texId = blockMeta.textureIds[0];
 			} else if(face.name === 'bot') {
-				texId = BlockMeta.textureIds[2];
+				texId = blockMeta.textureIds[2];
 			} else {
-				texId = BlockMeta.textureIds[1];
+				texId = blockMeta.textureIds[1];
 			}
 
 			const uv = (u << 1) | v;
 			const lighting = face.lighting;
-	
-			this.gDataBuffer.add((x << 26) | (y << 20) | (z << 14) | (texId << 6) | (uv << 4) | lighting);
+
+			if(blockMeta.opacity === Block.OPAQUE) {
+				this.gOpaqueDataBuffer.add((x << 26) | (y << 20) | (z << 14) | (texId << 6) | (uv << 4) | lighting);
+			} else {
+				this.gAlphaMaskDataBuffer.add((x << 26) | (y << 20) | (z << 14) | (texId << 6) | (uv << 4) | lighting);
+			}
 		}
 	}
 }

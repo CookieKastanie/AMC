@@ -1,25 +1,27 @@
 import { Shader } from 'akila/webgl'
-import { TERRAIN_OPAQUE_VS, TERRAIN_OPAQUE_FS } from './frags'
+import { TERRAIN_OPAQUE_VS, TERRAIN_OPAQUE_FS, TERRAIN_ALPHA_MASK_VS, TERRAIN_ALPHA_MASK_FS } from './frags'
 import { vec3 } from 'akila/math';
 import { CollisionTester } from './collision_tester';
 
 export class TerrainRenderer {
 	static init() {
-		TerrainRenderer.opaquerShader = new Shader(TERRAIN_OPAQUE_VS, TERRAIN_OPAQUE_FS);
-		TerrainRenderer.opaquerShader.use();
-		TerrainRenderer.opaquerShader.sendVec3('tint', new Float32Array([1, 1, 1]));
+		TerrainRenderer.opaqueShader = new Shader(TERRAIN_OPAQUE_VS, TERRAIN_OPAQUE_FS);
+		TerrainRenderer.opaqueShader.use();
+
+		TerrainRenderer.alphaMaskShader = new Shader(TERRAIN_ALPHA_MASK_VS, TERRAIN_ALPHA_MASK_FS);
+		TerrainRenderer.alphaMaskShader.use();
 	}
 
 	static drawWorld(display, world, camera) {
 		display.clear();
 
-		TerrainRenderer.opaquerShader.use();
-		TerrainRenderer.opaquerShader.sendMat4('VP', camera.getVPMatrix());
-		TerrainRenderer.opaquerShader.sendVec3('cameraWorldPos', camera.getPosition());
+		const camPos = camera.getPosition();
+
+		TerrainRenderer.opaqueShader.use();
+		TerrainRenderer.opaqueShader.sendMat4('VP', camera.getVPMatrix());
+		TerrainRenderer.opaqueShader.sendVec3('cameraWorldPos', camPos);
 		TerrainRenderer.terrainTexture.use();
 
-		// draw world
-		const camPos = camera.getPosition();
 
 		/*/
 		if(TerrainRenderer.indexArray == undefined) {
@@ -41,8 +43,8 @@ export class TerrainRenderer {
 		});
 		//*/
 
-
-		for(let i = 0; i < (world.sizeX * world.sizeY * world.sizeZ); ++i) {
+		TerrainRenderer.chuckToRenderCount = 0;
+		for(let i = 0; i < (world.sizeX * world.sizeY * world.sizeZ) || TerrainRenderer.chuckToRenderCount >= TerrainRenderer.maxChunkRenderCount; ++i) {
 			const chunk = world.chunks[i];
 			//const chunk = world.chunks[TerrainRenderer.indexArray[i]];
 
@@ -53,16 +55,41 @@ export class TerrainRenderer {
 			if(CollisionTester.isChunkInViewport(chunk.aabb, camera) == false) {
 				continue;
 			}
+	
+			TerrainRenderer.chuckToRender[TerrainRenderer.chuckToRenderCount++] = i;
+		}
 
-			// draw chunk
-			if(chunk.gDataBuffer.getCount() <= 0) {
+		for(let i = 0; i < TerrainRenderer.chuckToRenderCount; ++i) {
+			const chunk = world.chunks[TerrainRenderer.chuckToRender[i]];
+
+			if(chunk.gOpaqueDataBuffer.getCount() <= 0) {
 				continue;
 			}
-	
-			TerrainRenderer.opaquerShader.sendVec3('chunkPos', chunk.worldPosition);
-			chunk.gDataBuffer.draw();
+
+			TerrainRenderer.opaqueShader.sendVec3('chunkPos', chunk.worldPosition);
+			chunk.gOpaqueDataBuffer.draw();
+		}
+
+
+		TerrainRenderer.alphaMaskShader.use();
+		TerrainRenderer.alphaMaskShader.sendMat4('VP', camera.getVPMatrix());
+		TerrainRenderer.alphaMaskShader.sendVec3('cameraWorldPos', camPos);
+		TerrainRenderer.terrainTexture.use();
+
+		for(let i = 0; i < TerrainRenderer.chuckToRenderCount; ++i) {
+			const chunk = world.chunks[TerrainRenderer.chuckToRender[i]];
+
+			if(chunk.gAlphaMaskDataBuffer.getCount() <= 0) {
+				continue;
+			}
+
+			TerrainRenderer.alphaMaskShader.sendVec3('chunkPos', chunk.worldPosition);
+			chunk.gAlphaMaskDataBuffer.draw();
 		}
 	}
 }
 
 TerrainRenderer.terrainTexture = null;
+TerrainRenderer.maxChunkRenderCount = 512;
+TerrainRenderer.chuckToRender = new Uint32Array(TerrainRenderer.maxChunkRenderCount);
+TerrainRenderer.chuckToRenderCount = 0;

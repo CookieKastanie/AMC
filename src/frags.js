@@ -47,7 +47,6 @@ in vec3 v_worldPos;
 out vec4 fragColor;
 
 uniform sampler2DArray blocksTextures;
-uniform vec3 tint;
 uniform vec3 cameraWorldPos;
 
 float getFog() {
@@ -60,21 +59,75 @@ float getFog() {
 
 void main(){
 	vec3 color = texture(blocksTextures, vec3(v_uv, v_texId)).rgb;
-	fragColor = vec4(tint * color * v_lighting, 1.0);
-	fragColor.rgb = mix(fragColor.rgb, vec3(0.259, 0.647, 0.961), getFog());
+	fragColor = vec4(mix(color * v_lighting, vec3(0.259, 0.647, 0.961), getFog()), 1.0);
+}`;
 
-	/*/
+export const TERRAIN_ALPHA_MASK_VS = `#version 300 es
+precision mediump float;
+
+layout(location = 0) in uint a_vertexData;
+
+flat out float v_texId;
+out vec2 v_uv;
+out float v_lighting;
+out vec3 v_worldPos;
+
+uniform vec3 chunkPos;
+uniform mat4 VP;
+
+void main(){
+	vec3 pos = vec3(
+		float((a_vertexData & 0xFC000000u) >> 26u),
+		float((a_vertexData & 0x03F00000u) >> 20u),
+		float((a_vertexData & 0x000FC000u) >> 14u)
+	);
+
+	uint texId    = (a_vertexData & 0x00003FC0u) >> 6u;
+	uint uv       = (a_vertexData & 0x00000030u) >> 4u;
+	uint lighting =  a_vertexData & 0x0000000Fu;
+
+	v_worldPos = pos + chunkPos;
+	gl_Position = VP * vec4(v_worldPos, 1.0);
+
+	v_texId = float(texId);
+	v_uv = vec2(
+		float((uv & 0x2u) >> 1u),
+		1. - float(uv & 1u)
+	);
+	v_lighting = float(lighting) / 16.;
+}`;
+export const TERRAIN_ALPHA_MASK_FS = 
+`#version 300 es
+precision mediump float;
+precision mediump sampler2DArray;
+
+flat in float v_texId;
+in vec2 v_uv;
+in float v_lighting;
+in vec3 v_worldPos;
+
+out vec4 fragColor;
+
+uniform sampler2DArray blocksTextures;
+uniform vec3 cameraWorldPos;
+
+float getFog() {
+	float cameraToPixelDist = length(v_worldPos - cameraWorldPos);
+	float gFogEnd = 35.0;
+	float distRatio = 4.0 - cameraToPixelDist / gFogEnd;
+	float gExpFogDensity = 2.0;
+	return clamp(exp(-distRatio * gExpFogDensity), 0.0, 1.0);
+}
+
+void main(){
 	vec4 color = texture(blocksTextures, vec3(v_uv, v_texId));
+
 	if(color.a < 0.5) {
 		discard;
 	} else {
-		fragColor = vec4(tint * color.rgb * v_lighting, 1.0);
+		fragColor = vec4(mix(color.rgb * v_lighting, vec3(0.259, 0.647, 0.961), getFog()), 1.0);
 	}
-	//*/
 }`;
-
-
-
 
 
 
