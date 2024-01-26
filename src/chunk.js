@@ -58,13 +58,13 @@ export class Chunk {
 			const y = this.worldPosition[1] + chunkY;
 			const z = this.worldPosition[2] + chunkZ;
 
-			this.aabb.trySetMinMax(x, y, z);
-
 			const blockId = this.getBlock(chunkX, chunkY, chunkZ);
 			const blockMeta = Block.getMetaData(blockId);
 			if(blockId === 0) {
 				continue;
 			}
+
+			this.aabb.trySetMinMax(x, y, z);
 
 			let gDataBuffer; 
 			switch(blockMeta.opacity) {

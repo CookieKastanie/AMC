@@ -51,7 +51,7 @@ uniform vec3 cameraWorldPos;
 
 float getFog() {
 	float cameraToPixelDist = length(v_worldPos - cameraWorldPos);
-	float gFogEnd = 35.0;
+	float gFogEnd = 50.0;
 	float distRatio = 4.0 - cameraToPixelDist / gFogEnd;
 	float gExpFogDensity = 2.0;
 	return clamp(exp(-distRatio * gExpFogDensity), 0.0, 1.0);
@@ -113,7 +113,7 @@ uniform vec3 cameraWorldPos;
 
 float getFog() {
 	float cameraToPixelDist = length(v_worldPos - cameraWorldPos);
-	float gFogEnd = 35.0;
+	float gFogEnd = 50.0;
 	float distRatio = 4.0 - cameraToPixelDist / gFogEnd;
 	float gExpFogDensity = 2.0;
 	return clamp(exp(-distRatio * gExpFogDensity), 0.0, 1.0);

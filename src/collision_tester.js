@@ -1,6 +1,7 @@
 import { vec3, vec4 } from 'akila/math';
 import { AABB } from './aabb';
 import { LRD } from './line_debugger_renderer';
+import { Chunk } from './chunk';
 
 const frac = x => x - Math.floor(x);
 const dividBySelfW = (v) => {
@@ -97,55 +98,31 @@ export class CollisionTester {
 
 
 
-	static isRangesOverlaps(aMin, aMax, bmin, bMax) {
-		return (aMin <= bMax && aMax >= bmin) || (aMax <= bMax && aMin >= bmin)
-	}
+	//static isRangesOverlaps(aMin, aMax, bmin, bMax) {
+	//	return (aMin <= bMax && aMax >= bmin) || (aMax <= bMax && aMin >= bmin)
+	//}
 
 	static isChunkInViewport(chunkAABB, camera) {
-		//const pv = camera.getVPMatrix();
-		const pv = camera.camera;
+		const pv = camera.getVPMatrix();
 
 		for(let i = 0; i < 8; ++i) {
 			const p = CollisionTester.chunkAABBPoints[i];
 
 			vec4.transformMat4(p, chunkAABB.points[i], pv);
-			//dividBySelfW(p);
-/*
-			if(
-				p[0] <= 1 && p[0] >= -1 &&
-				p[1] <= 1 && p[1] >= -1 &&
-				p[2] <= 1 && p[2] >= -1
-			) {
-				return true;
-			}//*/
+			dividBySelfW(p);
 
-			if(p[2] <= 0) {
+			if(p[0] >= -1 && p[0] <= 1 &&
+			   p[1] >= -1 && p[1] <= 1 &&
+			   p[2] >= -1 && p[2] <= 1) {
+				return true;
+			}
+
+			if(vec3.distance(camera.getPosition(), chunkAABB.center) <= Chunk.SIZE) {
 				return true;
 			}
 		}
 
 		return false;
-
-
-		
-		/*
-		const minX = pv[0] * chunkAABB.minX + pv[12];
-		const maxX = pv[0] * chunkAABB.maxX + pv[12];
-
-		const minY = pv[5] * chunkAABB.minY + pv[13];
-		const maxY = pv[5] * chunkAABB.maxY + pv[13];
-
-		const minZ = pv[10] * chunkAABB.minZ + pv[14];
-		const maxZ = pv[10] * chunkAABB.maxZ + pv[14];
-
-		out[3] = m[3] * x + m[7] * y + m[11] * z + m[15] * w;
-
-		const view = 1;
-		return (
-			CollisionTester.isRangesOverlaps(minX, maxX, -view, view) ||
-			CollisionTester.isRangesOverlaps(minY, maxY, -view, view) ||
-			CollisionTester.isRangesOverlaps(minZ, maxZ, -view, view)
-		);*/
 	}
 
 	static isPointInView(point, camera) {

@@ -54,10 +54,10 @@ time.onInit(async () => {
 
 	player = new Player();
 
-	camera = new FirstPersonCamera(display.getWidth(), display.getHeight(), {near: 0.1, far: 400, fovy: Math.PI / 2.5});
-	//camera.setPosition([128, 50, 0]);
+	camera = new FirstPersonCamera(display.getWidth(), display.getHeight(), {near: 0.1, far: 200, fovy: Math.PI / 2.5});
+	camera.setPosition([128, 94, 0]);
 
-	camera2 = new Camera(display.getWidth(), display.getHeight(), {near: 0.1, far: 10, fovy: Math.PI / 2.5});
+	camera2 = new Camera(display.getWidth(), display.getHeight(), {near: 0.1, far: 200, fovy: Math.PI / 2.5});
 	//camera2.position = new Float32Array([128, 50, 0]);
 
 	const loadingResult = await Promise.all([
@@ -105,7 +105,7 @@ time.onTick(() => {
 		camera2.forward = [...camera.forward];
 	}
 	camera2.update();
-	LRD.addCameraView(camera2);
+	//LRD.addCameraView(camera2);
 
 	if(mouse.isPressed(Mouse.LEFT_BUTTON) || mouse.isPressed(Mouse.RIGHT_BUTTON) || mouse.isPressed(Mouse.WHEEL_BUTTON)) {
 		if(mouseClicked == false) {
@@ -127,17 +127,6 @@ time.onTick(() => {
 	if(currentPlayerBlockId < 0) currentPlayerBlockId += Block.MAPPING.length;
 	currentPlayerBlockId = Math.floor(currentPlayerBlockId) % Block.MAPPING.length;
 
-/*
-	player.aabb.setPosition([-10, -10, -10]);
-	
-
-	if(CollisionTester.isPointInView([-10, -10, -10], camera2)) {
-		LRD.addAABB(player.aabb);
-	} else {
-		LRD.addAABB(player.aabb, LRD.RED);
-	}
-
-*/
 	world.update();
 });
 

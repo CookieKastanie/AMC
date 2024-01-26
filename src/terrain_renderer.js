@@ -1,7 +1,8 @@
-import { Shader } from 'akila/webgl'
+import { Display, Shader } from 'akila/webgl'
 import { TERRAIN_OPAQUE_VS, TERRAIN_OPAQUE_FS, TERRAIN_ALPHA_MASK_VS, TERRAIN_ALPHA_MASK_FS } from './frags'
 import { vec3 } from 'akila/math';
 import { CollisionTester } from './collision_tester';
+import { LRD } from './line_debugger_renderer';
 
 export class TerrainRenderer {
 	static init() {
@@ -13,51 +14,27 @@ export class TerrainRenderer {
 	}
 
 	static drawWorld(display, world, camera) {
-		display.clear();
-
-		const camPos = camera.getPosition();
-
-		TerrainRenderer.opaqueShader.use();
-		TerrainRenderer.opaqueShader.sendMat4('VP', camera.getVPMatrix());
-		TerrainRenderer.opaqueShader.sendVec3('cameraWorldPos', camPos);
-		TerrainRenderer.terrainTexture.use();
-
-
-		/*/
-		if(TerrainRenderer.indexArray == undefined) {
-			TerrainRenderer.indexArray = new Array(world.sizeX * world.sizeY * world.sizeZ);
-
-			for(let i = 0; i < TerrainRenderer.indexArray.length; ++i) {
-				TerrainRenderer.indexArray[i] = i;
-			}
-		}
-
-		TerrainRenderer.indexArray.sort((ia, ib) => {
-			const a = world.chunks[ia];
-			const b = world.chunks[ib];
-
-			const distA = vec3.distance(a.aabb.center, camPos);
-			const distB = vec3.distance(b.aabb.center, camPos);
-
-			return distA < distB ? -1 : 1;
-		});
-		//*/
-
+		
+		// Visibility test
 		TerrainRenderer.chuckToRenderCount = 0;
 		for(let i = 0; i < (world.sizeX * world.sizeY * world.sizeZ) || TerrainRenderer.chuckToRenderCount >= TerrainRenderer.maxChunkRenderCount; ++i) {
 			const chunk = world.chunks[i];
-			//const chunk = world.chunks[TerrainRenderer.indexArray[i]];
-
-			if(vec3.distance(chunk.aabb.center, camPos) > (16 * 10)) {
-				continue;
-			}
-
 			if(CollisionTester.isChunkInViewport(chunk.aabb, camera) == false) {
 				continue;
 			}
 	
 			TerrainRenderer.chuckToRender[TerrainRenderer.chuckToRenderCount++] = i;
 		}
+
+
+		display.clear();
+
+		// Opaque goometry
+		display.disable(Display.BLEND);
+		TerrainRenderer.opaqueShader.use();
+		TerrainRenderer.opaqueShader.sendMat4('VP', camera.getVPMatrix());
+		TerrainRenderer.opaqueShader.sendVec3('cameraWorldPos', camera.getPosition());
+		TerrainRenderer.terrainTexture.use();
 
 		for(let i = 0; i < TerrainRenderer.chuckToRenderCount; ++i) {
 			const chunk = world.chunks[TerrainRenderer.chuckToRender[i]];
@@ -70,10 +47,10 @@ export class TerrainRenderer {
 			chunk.gOpaqueDataBuffer.draw();
 		}
 
-
+		// Alpha masked geometry
 		TerrainRenderer.alphaMaskShader.use();
 		TerrainRenderer.alphaMaskShader.sendMat4('VP', camera.getVPMatrix());
-		TerrainRenderer.alphaMaskShader.sendVec3('cameraWorldPos', camPos);
+		TerrainRenderer.alphaMaskShader.sendVec3('cameraWorldPos', camera.getPosition());
 		TerrainRenderer.terrainTexture.use();
 
 		for(let i = 0; i < TerrainRenderer.chuckToRenderCount; ++i) {
@@ -86,6 +63,7 @@ export class TerrainRenderer {
 			TerrainRenderer.alphaMaskShader.sendVec3('chunkPos', chunk.worldPosition);
 			chunk.gAlphaMaskDataBuffer.draw();
 		}
+		display.enable(Display.BLEND);
 	}
 }
 

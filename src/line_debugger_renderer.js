@@ -12,7 +12,8 @@ const dividBySelfW = (v) => {
 
 export class LRD {
 	static init() {
-		LRD.maxLine = 512;
+		//LRD.maxLine = 512;
+		LRD.maxLine = 10000;
 		LRD.position = new Float32Array(LRD.maxLine * 3 * 2);
 		LRD.color = new Float32Array(LRD.maxLine * 3 * 2);
 
@@ -31,6 +32,7 @@ export class LRD {
 
 		LRD.lineCount = 0;
 		LRD.index = 0;
+		LRD.alertMaxLineCountFired = false;
 	}
 
 	static draw(camera) {
@@ -45,7 +47,12 @@ export class LRD {
 
 	static addLine(from, to, color = LRD.WHITE) {
 		if(LRD.lineCount >= LRD.maxLine) {
-			console.error('Too many lines !');
+			// Limit 1 console.error per frame
+			if(LRD.alertMaxLineCountFired === false) {
+				LRD.alertMaxLineCountFired = true;
+				console.error('Too many lines !');
+			}
+
 			return;
 		}
 
