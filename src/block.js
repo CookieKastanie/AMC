@@ -1,6 +1,10 @@
 export class Block {
-	static getGeometry() {
-		return Block.GEOMETRY;
+	static getCubeGeometry() {
+		return Block.CUBE_GEOMETRY;
+	}
+
+	static getCrossGeometry() {
+		return Block.CROSS_GEOMETRY;
 	}
 
 	static getOffsets() {
@@ -20,10 +24,17 @@ Block.CUBE = 0;
 Block.CROSS = 1;
 Block.LIQUID = 2;
 
-Block.GEOMETRY = {
+Block.TOP_FACE = 0;
+Block.FRONT_FACE = 1;
+Block.LEFT_FACE = 2;
+Block.BOT_FACE = 3;
+Block.RIGHT_FACE = 4;
+Block.BACK_FACE = 5;
+
+Block.CUBE_GEOMETRY = {
 	faces: [
 		{
-			name: 'top',
+			name: Block.TOP_FACE,
 			position: [
 				[0, 1, 0], [1, 1, 1], [1, 1, 0],
 				[0, 1, 0], [0, 1, 1], [1, 1, 1]
@@ -35,7 +46,7 @@ Block.GEOMETRY = {
 			lighting: 15
 		},
 		{
-			name: 'front',
+			name: Block.FRONT_FACE,
 			position: [
 				[1, 1, 1], [0, 0, 1], [1, 0, 1],
 				[1, 1, 1], [0, 1, 1], [0, 0, 1]
@@ -47,7 +58,7 @@ Block.GEOMETRY = {
 			lighting: 14
 		},
 		{
-			name: 'left',
+			name: Block.LEFT_FACE,
 			position: [
 				[0, 1, 1], [0, 0, 0], [0, 0, 1],
 				[0, 1, 1], [0, 1, 0], [0, 0, 0]
@@ -59,7 +70,7 @@ Block.GEOMETRY = {
 			lighting: 12
 		},
 		{
-			name: 'bot',
+			name: Block.BOT_FACE,
 			position: [
 				[1, 0, 0], [0, 0, 1], [0, 0, 0],
 				[1, 0, 0], [1, 0, 1], [0, 0, 1]
@@ -71,7 +82,7 @@ Block.GEOMETRY = {
 			lighting: 10
 		},
 		{
-			name: 'right',
+			name: Block.RIGHT_FACE,
 			position: [
 				[1, 1, 0], [1, 0, 1], [1, 0, 0],
 				[1, 1, 0], [1, 1, 1], [1, 0, 1]
@@ -83,7 +94,7 @@ Block.GEOMETRY = {
 			lighting: 13
 		},
 		{
-			name: 'back',
+			name: Block.BACK_FACE,
 			position: [
 				[0, 1, 0], [1, 0, 0], [0, 0, 0],
 				[0, 1, 0], [1, 1, 0], [1, 0, 0]
@@ -97,6 +108,47 @@ Block.GEOMETRY = {
 	],
 
 	length: 3 * 2 * 6
+}
+
+Block.CROSS_GEOMETRY = {
+	faces: [
+		{
+			position: [
+				[1, 1, 1], [0, 0, 0], [1, 0, 1],
+				[1, 1, 1], [0, 1, 0], [0, 0, 0],
+
+				[1, 1, 1], [1, 0, 1], [0, 0, 0],
+				[1, 1, 1], [0, 0, 0], [0, 1, 0],
+			],
+			uv: [
+				[1, 1], [0, 0], [1, 0],
+				[1, 1], [0, 1], [0, 0],
+
+				[1, 1], [1, 0], [0, 0],
+				[1, 1], [0, 0], [0, 1],
+			],
+			lighting: 15
+		},
+		{
+			position: [
+				[1, 1, 0], [0, 0, 1], [1, 0, 0],
+				[1, 1, 0], [0, 1, 1], [0, 0, 1],
+
+				[1, 1, 0], [1, 0, 0], [0, 0, 1],
+				[1, 1, 0], [0, 0, 1], [0, 1, 1],
+			],
+			uv: [
+				[0, 1], [1, 0], [0, 0],
+				[0, 1], [1, 1], [1, 0],
+
+				[0, 1], [0, 0], [1, 0],
+				[0, 1], [1, 0], [1, 1],
+			],
+			lighting: 15
+		}
+	],
+
+	length: 3 * 4 * 1
 }
 
 Block.OFFSETS = [
@@ -322,6 +374,46 @@ Block.MAPPING = [
 		textureIds: [49, 49, 49] // top, sides, bot
 	},
 
+
+	////////
+
+	{ // 29
+		name: 'Poppy',
+		isTransparent: true,
+		opacity: Block.ALPHA_MASK,
+		shape: Block.CROSS,
+		textureIds: [12, 12, 12] // top, sides, bot
+	},
+	{ // 30
+		name: 'Dandelon',
+		isTransparent: true,
+		opacity: Block.ALPHA_MASK,
+		shape: Block.CROSS,
+		textureIds: [13, 13, 13] // top, sides, bot
+	},
+	{ // 31
+		name: 'Saplin',
+		isTransparent: true,
+		opacity: Block.ALPHA_MASK,
+		shape: Block.CROSS,
+		textureIds: [15, 15, 15] // top, sides, bot
+	},
+	{ // 32
+		name: 'Mushroom',
+		isTransparent: true,
+		opacity: Block.ALPHA_MASK,
+		shape: Block.CROSS,
+		textureIds: [28, 28, 28] // top, sides, bot
+	},
+	{ // 33
+		name: 'BrownMushroom',
+		isTransparent: true,
+		opacity: Block.ALPHA_MASK,
+		shape: Block.CROSS,
+		textureIds: [29, 29, 29] // top, sides, bot
+	},
+
+
 	////////
 /*
 	{
@@ -333,7 +425,8 @@ Block.MAPPING = [
 	},*/
 ];
 
-for(let i = 0; i < 16; ++i) {  // 29
+
+for(let i = 0; i < 16; ++i) {  // 34
 	Block.MAPPING.push({
 		name: 'Wool' + i,
 		isTransparent: false,

@@ -61,7 +61,7 @@ time.onInit(async () => {
 	//camera2.position = new Float32Array([128, 50, 0]);
 
 	const loadingResult = await Promise.all([
-		TextureLoader.texture2dArray(TERRAIN_IMG_DATA, [16, 16], {minFilter: Texture.LINEAR_MIPMAP_LINEAR, magFilter: Texture.NEAREST}),
+		TextureLoader.texture2dArray(TERRAIN_IMG_DATA, [16, 16], {minFilter: Texture.LINEAR_MIPMAP_LINEAR, magFilter: Texture.NEAREST, wrapS: Texture.CLAMP_TO_EDGE, wrapS: Texture.CLAMP_TO_EDGE}),
 		TextureLoader.texture2d(CROSS_IMAGE_DATA, {minFilter: Texture.NEAREST, magFilter: Texture.NEAREST}),
 		new Promise(resolve => {SDF.fillWorld(world); resolve();})
 	]);

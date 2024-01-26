@@ -33,7 +33,7 @@ export class DynamicGBuffer {
 	add(value) {
 		if(this.buffer.length <= this.count) { // grow buffer
 			const old = this.buffer;
-			this.buffer = new this.ArrayType(old.length * 2);
+			this.buffer = new this.ArrayType(this.count * 2);
 			this.buffer.set(old);
 
 			this.needRecreateVAO = true;

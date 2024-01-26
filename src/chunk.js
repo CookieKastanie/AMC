@@ -32,8 +32,9 @@ export class Chunk {
 			this.data[i] = 0;
 		}
 
-		this.gOpaqueDataBuffer = new DynamicGBuffer(Chunk.SIZE * Block.getGeometry().length);
-		this.gAlphaMaskDataBuffer = new DynamicGBuffer(Chunk.SIZE * Block.getGeometry().length);
+		this.gOpaqueDataBuffer = new DynamicGBuffer(128);
+		this.gAlphaMaskDataBuffer = new DynamicGBuffer(128);
+		this.gATranslucentDataBuffer = new DynamicGBuffer(128);
 	}
 
 	getBlock(x, y, z) {
@@ -48,6 +49,7 @@ export class Chunk {
 		this.aabb.setToInfinity();
 		this.gOpaqueDataBuffer.begin();
 		this.gAlphaMaskDataBuffer.begin();
+		this.gATranslucentDataBuffer.begin();
 
 		for(let chunkZ = 0; chunkZ < Chunk.SIZE; ++chunkZ)
 		for(let chunkY = 0; chunkY < Chunk.SIZE; ++chunkY)
@@ -56,35 +58,71 @@ export class Chunk {
 			const y = this.worldPosition[1] + chunkY;
 			const z = this.worldPosition[2] + chunkZ;
 
+			this.aabb.trySetMinMax(x, y, z);
+
 			const blockId = this.getBlock(chunkX, chunkY, chunkZ);
 			const blockMeta = Block.getMetaData(blockId);
 			if(blockId === 0) {
 				continue;
 			}
 
-			this.aabb.trySetMinMax(x, y, z);
+			let gDataBuffer; 
+			switch(blockMeta.opacity) {
+				case Block.ALPHA_MASK:
+					gDataBuffer = this.gAlphaMaskDataBuffer;
+					break;
+				case Block.TRANSLUCENT:
+					gDataBuffer = this.gATranslucentDataBuffer;
+					break;
+				case Block.OPAQUE:
+				default:
+					gDataBuffer = this.gOpaqueDataBuffer;
+					break;
+			}
 
-			const blockGeometry = Block.getGeometry();
-			const offsets = Block.getOffsets();
-
-			for(let j = 0; j < offsets.length; ++j) {
-				const offset = offsets[j];
-				const face = blockGeometry.faces[j];
-
-				const neighborBlockId = world.getBlock(x + offset[0], y + offset[1], z + offset[2]);
-				const neighborBlockMeta = Block.getMetaData(neighborBlockId);
-				if(neighborBlockId === 0 || (neighborBlockMeta.isTransparent && blockMeta.isTransparent == false)) {
-					this.addVertices(blockMeta, face, chunkX, chunkY, chunkZ);
-				}
+			switch(blockMeta.shape) {
+				case Block.CROSS:
+					this.addCross(gDataBuffer, blockMeta, chunkX, chunkY, chunkZ);
+					break;
+				case Block.CUBE:
+				default:
+					this.addCube(gDataBuffer, blockMeta, world, x, y, z, chunkX, chunkY, chunkZ);
+					break;
 			}
 		}
 
+		this.gATranslucentDataBuffer.end();
 		this.gAlphaMaskDataBuffer.end();
 		this.gOpaqueDataBuffer.end();
 		this.aabb.setupPoints();
 	}
 
-	addVertices = (blockMeta, face, chunkX, chunkY, chunkZ) => {
+	addCube(gDataBuffer, blockMeta, world, x, y, z, chunkX, chunkY, chunkZ) {
+		const blockGeometry = Block.getCubeGeometry();
+		const offsets = Block.getOffsets();
+
+		for(let j = 0; j < offsets.length; ++j) {
+			const offset = offsets[j];
+			const face = blockGeometry.faces[j];
+
+			const neighborBlockId = world.getBlock(x + offset[0], y + offset[1], z + offset[2]);
+			const neighborBlockMeta = Block.getMetaData(neighborBlockId);
+			if(neighborBlockId === 0 || (neighborBlockMeta.isTransparent && blockMeta.isTransparent == false)) {
+				this.addVertices(gDataBuffer, blockMeta, face, chunkX, chunkY, chunkZ);
+			}
+		}
+	}
+
+	addCross(gDataBuffer, blockMeta, chunkX, chunkY, chunkZ) {
+		const blockGeometry = Block.getCrossGeometry();
+
+		for(let i = 0; i < blockGeometry.faces.length; ++i) {
+			const face = blockGeometry.faces[i];
+			this.addVertices(gDataBuffer, blockMeta, face, chunkX, chunkY, chunkZ);
+		}
+	}
+
+	addVertices(gDataBuffer, blockMeta, face, chunkX, chunkY, chunkZ) {
 		for(let i = 0; i < face.position.length; ++i) {
 			const x = face.position[i][0] + chunkX;
 			const y = face.position[i][1] + chunkY;
@@ -94,22 +132,23 @@ export class Chunk {
 			const v = face.uv[i][1];
 
 			let texId = 0;
-			if(face.name === 'top') {
-				texId = blockMeta.textureIds[0];
-			} else if(face.name === 'bot') {
-				texId = blockMeta.textureIds[2];
-			} else {
-				texId = blockMeta.textureIds[1];
+			switch(face.name) {
+				case Block.TOP_FACE:
+					texId = blockMeta.textureIds[0];
+					break;
+				case Block.BOT_FACE:
+					texId = blockMeta.textureIds[2];
+					break;
+				default:
+					texId = blockMeta.textureIds[1];
+					break;
 			}
 
 			const uv = (u << 1) | v;
 			const lighting = face.lighting;
 
-			if(blockMeta.opacity === Block.OPAQUE) {
-				this.gOpaqueDataBuffer.add((x << 26) | (y << 20) | (z << 14) | (texId << 6) | (uv << 4) | lighting);
-			} else {
-				this.gAlphaMaskDataBuffer.add((x << 26) | (y << 20) | (z << 14) | (texId << 6) | (uv << 4) | lighting);
-			}
+			const packedBlockData = (x << 26) | (y << 20) | (z << 14) | (texId << 6) | (uv << 4) | lighting;
+			gDataBuffer.add(packedBlockData);
 		}
 	}
 }

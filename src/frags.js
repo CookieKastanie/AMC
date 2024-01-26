@@ -231,8 +231,8 @@ uniform sampler2DArray blocksTextures;
 uniform float texId;
 
 void main(){
-	vec3 color = texture(blocksTextures, vec3(v_uv, texId)).rgb;
-	fragColor = vec4(color, 1.0);
+	vec4 color = texture(blocksTextures, vec3(v_uv, texId));
+	fragColor = color;
 }`;
 
 
