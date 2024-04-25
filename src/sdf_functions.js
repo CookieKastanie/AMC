@@ -73,6 +73,16 @@ export class SDF {
 		return Math.hypot(pa[0] - ba[0] * h, pa[1] - ba[1] * h, pa[2] - ba[2] * h) - r;
 	}
 
+	static surface(noise2D, x, y, z) {
+
+		const oct1 = noise2D(x * 0.015, z * 0.015);
+		const oct2 = noise2D(x * 0.1 + 75982.0, z * 0.1 + 325884.0);
+
+		return ((oct1 + oct2 * 0.1) * .5 + .5) * 23 + 60;
+
+		//return (noise2D(x * 0.015, z * 0.015) * .5 + .5) * 23 + 60;
+	}
+
 	static fillWorld(world) {
 		const noise2D = createNoise2D();
 		const noise3D = createNoise3D();
@@ -81,7 +91,7 @@ export class SDF {
 		//for(let y = 0; y < world.getYSizeBlockCount(); ++y)
 		for(let y = world.getYSizeBlockCount() - 1; y >= 0; --y)
 		for(let x = 0; x < world.getXSizeBlockCount(); ++x) {
-			const surface = (noise2D(x * 0.015, z * 0.015) * .5 + .5) * 23 + 60;
+			const surface = SDF.surface(noise2D, x, y, z);
 			const cave = noise3D(x * 0.05, y * 0.05, z * 0.05) * .5 + .5;
 	
 			if(y == 56 && (x < stamp.length) && (z < stamp[0].length)) {
@@ -144,7 +154,7 @@ export class SDF {
 		for(let z = 0; z < world.getZSizeBlockCount(); ++z)
 		for(let y = 0; y < world.getYSizeBlockCount(); ++y)
 		for(let x = 0; x < world.getXSizeBlockCount(); ++x) {
-			const surface = (noise2D(x * 0.015, z * 0.015) * .5 + .5) * 23 + 60;
+			const surface = SDF.surface(noise2D, x, y, z);
 			const foliage = noise2D(x * -0.01, z * -0.01) * .5 + .5;
 
 			if(y === Math.floor(surface + 1)) {

@@ -19,11 +19,11 @@ import { CollisionTester } from './collision_tester'
 import { TextureLoader } from './texture_loader'
 import { TerrainRenderer } from './terrain_renderer'
 import { UIRenderer } from './ui_renderer'
+import { AABB } from './aabb'
 
 
 //const display = new Display(1280, 720, {webGLVersion: 2});
 const display = new Display(Infos.getFullScreenWidth(), Infos.getFullScreenHeight(), {webGLVersion: 2});
-display.setClearColor(0.259, 0.647, 0.961);
 
 let mouse;
 let keyboard;
@@ -39,7 +39,10 @@ const time = new Time();
 
 //const world = new World(16, 8, 16); // 16
 
-const world = new World(8, 4, 8); // 32
+
+const world = new World(1, 1, 1); // 32
+
+////const world = new World(8, 4, 8); // 32
 
 //const world = new World(4, 2, 4);
 
@@ -55,7 +58,9 @@ time.onInit(async () => {
 	player = new Player();
 
 	camera = new FirstPersonCamera(display.getWidth(), display.getHeight(), {near: 0.1, far: 200, fovy: Math.PI / 2.5});
-	camera.setPosition([128, 94, 0]);
+	///////camera.setPosition([128, 94, 0]);
+	camera.setPosition([0, 0, 0]);
+
 
 	camera2 = new Camera(display.getWidth(), display.getHeight(), {near: 0.1, far: 200, fovy: Math.PI / 2.5});
 	//camera2.position = new Float32Array([128, 50, 0]);
@@ -73,6 +78,28 @@ time.onInit(async () => {
 	world.buildAll();
 });
 
+let A = new AABB();
+A.originMinX = -1;
+A.originMaxX = 1;
+
+A.originMinY = -1;
+A.originMaxY = 1;
+
+A.originMinZ = -1;
+A.originMaxZ = 1;
+
+let B = new AABB();
+B.originMinX = -1;
+B.originMaxX = 1;
+
+B.originMinY = -1;
+B.originMaxY = 1;
+
+B.originMinZ = -1;
+B.originMaxZ = 1;
+
+B.setPosition([0, 0, 0]);
+
 let mouseClicked = false;
 time.onTick(() => {
 	LRD.start();
@@ -82,7 +109,7 @@ time.onTick(() => {
 	camera.aabb.setPosition(camera.position);
 	//camera.speed = 4;
 
-	/*/
+	//*/
 	const move = CollisionTester.AABBToWorld(camera.aabb, camera.position, world);
 	camera.setPosition(move);
 	{
@@ -97,6 +124,24 @@ time.onTick(() => {
 	}
 	//*/
 
+	/*/
+	{
+		A.setPosition([-10, -10, -10]);
+		LRD.addAABB(A, LRD.YELLOW);
+
+		if(keyboard.isPressed(Keyboard.KEY_A)) {
+			B.setPosition(camera.position);
+		}
+
+		LRD.addAABB(B, LRD.BLUE);
+
+		const dist = CollisionTester.AABBpushAABB(A, B);
+		console.log(dist[0], dist[1], dist[2]);
+
+		//const res = CollisionTester.AABBToAABBTest(A, B);
+		//console.log(res);
+	}
+	//*/
 
 
 	if(keyboard.isPressed(Keyboard.KEY_A)) {

@@ -34,7 +34,7 @@ export class Chunk {
 
 		this.gOpaqueDataBuffer = new DynamicGBuffer(128);
 		this.gAlphaMaskDataBuffer = new DynamicGBuffer(128);
-		this.gATranslucentDataBuffer = new DynamicGBuffer(128);
+		this.gTranslucentDataBuffer = new DynamicGBuffer(128);
 	}
 
 	getBlock(x, y, z) {
@@ -49,7 +49,7 @@ export class Chunk {
 		this.aabb.setToInfinity();
 		this.gOpaqueDataBuffer.begin();
 		this.gAlphaMaskDataBuffer.begin();
-		this.gATranslucentDataBuffer.begin();
+		this.gTranslucentDataBuffer.begin();
 
 		for(let chunkZ = 0; chunkZ < Chunk.SIZE; ++chunkZ)
 		for(let chunkY = 0; chunkY < Chunk.SIZE; ++chunkY)
@@ -72,7 +72,7 @@ export class Chunk {
 					gDataBuffer = this.gAlphaMaskDataBuffer;
 					break;
 				case Block.TRANSLUCENT:
-					gDataBuffer = this.gATranslucentDataBuffer;
+					gDataBuffer = this.gTranslucentDataBuffer;
 					break;
 				case Block.OPAQUE:
 				default:
@@ -91,7 +91,7 @@ export class Chunk {
 			}
 		}
 
-		this.gATranslucentDataBuffer.end();
+		this.gTranslucentDataBuffer.end();
 		this.gAlphaMaskDataBuffer.end();
 		this.gOpaqueDataBuffer.end();
 		this.aabb.setupPoints();

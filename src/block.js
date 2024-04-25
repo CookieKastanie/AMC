@@ -369,7 +369,7 @@ Block.MAPPING = [
 	{ // 28
 		name: 'Glass',
 		isTransparent: true,
-		opacity: Block.ALPHA_MASK,
+		opacity: Block.TRANSLUCENT,
 		shape: Block.CUBE,
 		textureIds: [49, 49, 49] // top, sides, bot
 	},

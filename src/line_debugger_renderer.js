@@ -23,6 +23,8 @@ export class LRD {
 		LRD.vao.addVBO(LRD.positionVBO).addVBO(LRD.colorVBO);
 
 		LRD.lineShader = new Shader(LINE_VS, LINE_FS);
+
+		window.DRAW_DEBUG = true;
 	}
 
 	static start() {
@@ -36,6 +38,10 @@ export class LRD {
 	}
 
 	static draw(camera) {
+		if(window.DRAW_DEBUG !== true) {
+			return;
+		}
+
 		LRD.lineShader.use();
 		LRD.lineShader.sendMat4('VP', camera.getVPMatrix());
 

@@ -12,11 +12,15 @@ const dividBySelfW = (v) => {
 	return v;
 }
 
-export class CollisionTester {
-	//static isRangesOverlaps(aMin, aMax, bmin, bMax) { // expect well formed parameters
-	//	return aMin <= bMax && aMax >= bmin
-	//}
+const leftRightMin = (a, b) => {
+	if(a < b) {
+		return -a;
+	} else {
+		return b;
+	}
+}
 
+export class CollisionTester {
 	static AABBToAABBTest(a, b) {
 		return (
 			a.minX < b.maxX &&
@@ -28,39 +32,45 @@ export class CollisionTester {
 		);
 	}
 
-	static AABBToAABBDistance(a, b) {
-		const dxg = a.maxX - b.minX;
-		const dxd = b.maxX - a.minX;
-
-		const dyg = a.maxY - b.minY;
-		const dyd = b.maxY - a.minY;
-
-		const dzg = a.maxZ - b.minZ;
-		const dzd = b.maxZ - a.minZ;
-
-		const minx = Math.min(Math.abs(dxg), Math.abs(dxd));
-		const miny = Math.min(Math.abs(dyg), Math.abs(dyd));
-		const minz = Math.min(Math.abs(dzg), Math.abs(dzd));
-
-		//console.log(minx, miny, minz)
-
+	static AABBpushAABB(a, b) {
 		const move = vec3.create();
 		move[0] = 0;
 		move[1] = 0;
 		move[2] = 0;
 
-		const globalMin = Math.min(minx, miny, minz);
-		if(globalMin == minx) {
-			if(minx == Math.abs(dxg)) move[0] = dxg;
-			else if(minx == Math.abs(dxd)) move[0] = dxd;
-		} else if(globalMin == miny) {
-			if(miny == Math.abs(dyg)) move[1] = dyg;
-			else if(miny == Math.abs(dyd)) move[1] = dyd;
-		} else if(globalMin == minz) {
-			if(minz == Math.abs(dzg)) move[2] = dzg;
-			else if(minz == Math.abs(dzd)) move[2] = dzd;
+		if(CollisionTester.AABBToAABBTest(a, b) != true) {
+			return move;
 		}
 
+		const dxL = Math.abs(b.maxX - a.minX);
+		const dxR = Math.abs(a.maxX - b.minX);
+
+		const dyL = Math.abs(b.maxY - a.minY);
+		const dyR = Math.abs(a.maxY - b.minY);
+
+		const dzL = Math.abs(b.maxZ - a.minZ);
+		const dzR = Math.abs(a.maxZ - b.minZ);
+
+		const minX = leftRightMin(dxL, dxR);
+		const minY = leftRightMin(dyL, dyR);
+		const minZ = leftRightMin(dzL, dzR);
+
+		const globalMin = Math.min(Math.abs(minX), Math.abs(minY), Math.abs(minZ));
+		if(globalMin === Math.abs(minX)) {
+			move[0] = minX;
+			return move;
+		}
+
+		if(globalMin === Math.abs(minY)) {
+			move[1] = minY;
+			return move;
+		}
+
+		if(globalMin === Math.abs(minZ)) {
+			move[2] = minZ;
+			return move;
+		}
+		
 		return move;
 	}
 
@@ -79,10 +89,10 @@ export class CollisionTester {
 			CollisionTester.blockAABB.setPosition(blockPosition);
 
 			const color = (CollisionTester.swaps[i][0] != 0 || CollisionTester.swaps[i][2] != 0) ? LRD.GREEN : LRD.RED;
-			//LRD.addAABB(CollisionTester.blockAABB, color);
+			LRD.addAABB(CollisionTester.blockAABB, color);
 
-			if(block.isAir == false) {
-				//*/
+			if(block != 0) {
+				/*/
 				if(CollisionTester.AABBToAABBTest(aabb, CollisionTester.blockAABB)) {
 					console.log('collide');
 					
@@ -90,6 +100,9 @@ export class CollisionTester {
 					vec3.add(position, position, m);
 				}
 				//*/
+
+				const m = CollisionTester.AABBpushAABB(CollisionTester.blockAABB, aabb);
+				vec3.add(position, position, m);
 			}
 		}
 
@@ -98,9 +111,7 @@ export class CollisionTester {
 
 
 
-	//static isRangesOverlaps(aMin, aMax, bmin, bMax) {
-	//	return (aMin <= bMax && aMax >= bmin) || (aMax <= bMax && aMin >= bmin)
-	//}
+
 
 	static isChunkInViewport(chunkAABB, camera) {
 		const pv = camera.getVPMatrix();
@@ -117,7 +128,7 @@ export class CollisionTester {
 				return true;
 			}
 
-			if(vec3.distance(camera.getPosition(), chunkAABB.center) <= Chunk.SIZE) {
+			if(vec3.distance(camera.getPosition(), chunkAABB.center) <= (Chunk.SIZE * 1.5)) {
 				return true;
 			}
 		}
