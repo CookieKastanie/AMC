@@ -20,9 +20,10 @@ Block.OPAQUE = 0;
 Block.ALPHA_MASK = 1;
 Block.TRANSLUCENT = 2;
 
-Block.CUBE = 0;
-Block.CROSS = 1;
-Block.LIQUID = 2;
+Block.EMPTY = 0;
+Block.CUBE = 1;
+Block.CROSS = 2;
+Block.LIQUID = 3;
 
 Block.TOP_FACE = 0;
 Block.FRONT_FACE = 1;
@@ -165,7 +166,7 @@ Block.MAPPING = [
 		name: 'Air',
 		isTransparent: true,
 		opacity: Block.TRANSLUCENT,
-		shape: Block.CUBE,
+		shape: Block.EMPTY,
 		textureIds: [0, 0, 0] // top, sides, bot
 	},
 	{ // 1

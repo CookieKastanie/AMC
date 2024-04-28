@@ -33,16 +33,15 @@ let camera2;
 
 let player;
 
-let currentPlayerBlockId = 0;
+let currentPlayerBlockId = 1;
 
 const time = new Time();
 
 //const world = new World(16, 8, 16); // 16
 
+//const world = new World(1, 1, 1); // 32
 
-const world = new World(1, 1, 1); // 32
-
-////const world = new World(8, 4, 8); // 32
+const world = new World(8, 4, 8); // 32
 
 //const world = new World(4, 2, 4);
 
@@ -57,9 +56,9 @@ time.onInit(async () => {
 
 	player = new Player();
 
-	camera = new FirstPersonCamera(display.getWidth(), display.getHeight(), {near: 0.1, far: 200, fovy: Math.PI / 2.5});
-	///////camera.setPosition([128, 94, 0]);
-	camera.setPosition([0, 0, 0]);
+	//camera = new FirstPersonCamera(display.getWidth(), display.getHeight(), {near: 0.1, far: 200, fovy: Math.PI / 2.5});
+	//camera.setPosition([128, 94, 0]);
+	camera = new Camera(display.getWidth(), display.getHeight(), {near: 0.1, far: 200, fovy: Math.PI / 2.5});
 
 
 	camera2 = new Camera(display.getWidth(), display.getHeight(), {near: 0.1, far: 200, fovy: Math.PI / 2.5});
@@ -76,6 +75,15 @@ time.onInit(async () => {
 	UIRenderer.crossTexture = loadingResult[1];
 
 	world.buildAll();
+
+	{
+		const pos = CollisionTester.traceBlock(
+			[world.getXSizeBlockCount() / 2, world.getYSizeBlockCount() + 1, world.getZSizeBlockCount() / 2],
+			[world.getXSizeBlockCount() / 2, 0, world.getZSizeBlockCount() / 2],
+			world
+		);
+		player.setPosition(pos);
+	}
 });
 
 let A = new AABB();
@@ -104,14 +112,55 @@ let mouseClicked = false;
 time.onTick(() => {
 	LRD.start();
 
+	player.update();
+
+	const displacement = CollisionTester.AABBToWorld(player.aabb, player.position, world);
+	vec3.add(player.position, player.position, displacement);
+	if(displacement[1] > 0 && player.localVel[1] <= 0) {
+		player.isGrounded = true;
+		player.localVel[1] = 0;
+	}
+
+	camera.position[0] = player.position[0];
+	camera.position[1] = player.position[1] + 1.25;
+	camera.position[2] = player.position[2];
+
+	camera.forward[0] = player.forward[0];
+	camera.forward[1] = player.forward[1];
+	camera.forward[2] = player.forward[2];
 	camera.update();
-	camera.aabb = player.aabb;
-	camera.aabb.setPosition(camera.position);
+	
+
+	if(player.position[1] < -128) {
+		const pos = CollisionTester.traceBlock(
+			[world.getXSizeBlockCount() / 2, world.getYSizeBlockCount() + 1, world.getZSizeBlockCount() / 2],
+			[world.getXSizeBlockCount() / 2, 0, world.getZSizeBlockCount() / 2],
+			world
+		);
+		player.setPosition(pos);
+		player.localVel[1] = 0;
+	}
+	
+	
+	//LRD.addAABB(player.aabb);
+	
+	
+	
+	
+	
+	//camera.aabb = player.aabb;
 	//camera.speed = 4;
 
-	//*/
-	const move = CollisionTester.AABBToWorld(camera.aabb, camera.position, world);
-	camera.setPosition(move);
+
+	
+
+	/*/
+	if(keyboard.isPressed(Keyboard.KEY_A)) {
+		const move = CollisionTester.AABBToWorld(camera.aabb, camera.position, world);
+		camera.setPosition(move);
+	}
+
+	
 	{
 		const fBuffer = new Float32Array(3);
 
@@ -123,6 +172,8 @@ time.onTick(() => {
 		mat4.multiply(camera.vp, camera.projection, camera.camera);
 	}
 	//*/
+
+	//LRD.addAABB(player.aabb);
 
 	/*/
 	{
@@ -144,12 +195,14 @@ time.onTick(() => {
 	//*/
 
 
+	/*/
 	if(keyboard.isPressed(Keyboard.KEY_A)) {
 		camera2.position = [...camera.position];
 		camera2.up = [...camera.up];
 		camera2.forward = [...camera.forward];
 	}
 	camera2.update();
+	//*/
 	//LRD.addCameraView(camera2);
 
 	if(mouse.isPressed(Mouse.LEFT_BUTTON) || mouse.isPressed(Mouse.RIGHT_BUTTON) || mouse.isPressed(Mouse.WHEEL_BUTTON)) {
@@ -161,7 +214,7 @@ time.onTick(() => {
 			} else if(mouse.isPressed(Mouse.LEFT_BUTTON)) {
 				Action.destroyBlockFromCameraRay(world, camera);
 			} else {
-				Action.placeBlockFromCameraRay(world, currentPlayerBlockId, camera);
+				Action.placeBlockFromCameraRay(world, currentPlayerBlockId, camera, player.aabb);
 			}
 		}
 	} else {

@@ -1,5 +1,6 @@
 import { vec3 } from 'akila/math'
 import { gridRaycast3d } from './grid_raycast3d'
+import { CollisionTester } from './collision_tester';
 
 export class Action {
 	static traceBlockFromCameraRay(world, blockId, camera, raylength = 64) {
@@ -29,7 +30,7 @@ export class Action {
 		}
 	}
 
-	static placeBlockFromCameraRay(world, newBlockId, camera, raylength = 7) {
+	static placeBlockFromCameraRay(world, newBlockId, camera, aabb, raylength = 7) {
 		let start = vec3.clone(camera.getPosition());
 		let end = vec3.create();
 
@@ -45,7 +46,11 @@ export class Action {
 
 			if(prevId === 0 && blockId !== 0) {
 				vec3.floor(start, start);
-				if(vec3.equals(prevPos, start)) { // todo replace by player aabb
+				if(vec3.equals(prevPos, start)) {
+					break;
+				}
+
+				if(CollisionTester.AABBToBlockPositionTest(aabb, prevPos)) {
 					break;
 				}
 

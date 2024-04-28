@@ -47,7 +47,7 @@ export class TerrainRenderer {
 			if(CollisionTester.isChunkInViewport(chunk.aabb, camera) == false) {
 				continue;
 			}
-			LRD.addAABB(chunk.aabb)
+			//LRD.addAABB(chunk.aabb)
 	
 			TerrainRenderer.chuckToRender[TerrainRenderer.chuckToRenderCount++] = i;
 		}

@@ -1,7 +1,9 @@
+import { Block } from './block';
 import { vec3, vec4 } from 'akila/math';
 import { AABB } from './aabb';
 import { LRD } from './line_debugger_renderer';
 import { Chunk } from './chunk';
+import { gridRaycast3d } from './grid_raycast3d';
 
 const frac = x => x - Math.floor(x);
 const dividBySelfW = (v) => {
@@ -34,14 +36,15 @@ export class CollisionTester {
 
 	static AABBpushAABB(a, b) {
 		const move = vec3.create();
-		move[0] = 0;
-		move[1] = 0;
-		move[2] = 0;
 
 		if(CollisionTester.AABBToAABBTest(a, b) != true) {
 			return move;
 		}
 
+		return CollisionTester.AABBpushAABBNoTest(a, b, move);
+	}
+
+	static AABBpushAABBNoTest(a, b, move = vec3.create()) {
 		const dxL = Math.abs(b.maxX - a.minX);
 		const dxR = Math.abs(a.maxX - b.minX);
 
@@ -74,43 +77,89 @@ export class CollisionTester {
 		return move;
 	}
 
+
+
 	static AABBToWorld(aabb, position, world) {
-		position = vec3.clone(position);
+		let displacement = vec3.create();
 
 		const currentBlockPosition = vec3.create();
 		vec3.floor(currentBlockPosition, position);
 
- 		const blockPosition = vec3.create();
+ 		const blockPositions = [];
 		for(let i = 0; i < CollisionTester.swaps.length; ++i) {
+			const blockPosition = vec3.create();
 			vec3.add(blockPosition, currentBlockPosition, CollisionTester.swaps[i]);
 
-			const block = world.getBlock(...blockPosition);
+			const blockId = world.getBlock(...blockPosition);
+			const blockMeta = Block.getMetaData(blockId);
 
+			if(blockMeta.shape !== Block.CUBE) {
+				continue;
+			}
+
+			blockPositions.push(blockPosition);
+		}
+
+		for(let i = 0; i < 8; ++i) {
+			aabb.setPosition([position[0] + displacement[0], position[1] + displacement[1], position[2] + displacement[2]]);
+			const {collision, move} = CollisionTester.AABBToWorldWorker(aabb, blockPositions);
+
+			if(collision === false) {
+				break;
+			}
+
+			vec3.add(displacement, displacement, move);
+		}
+
+		return displacement;
+	}
+
+	static AABBToWorldWorker(aabb, blockPositions) {
+		let min = 100000000;
+		let collision = false;
+		let move = vec3.create();
+
+		for(const blockPosition of blockPositions) {
 			CollisionTester.blockAABB.setPosition(blockPosition);
 
-			const color = (CollisionTester.swaps[i][0] != 0 || CollisionTester.swaps[i][2] != 0) ? LRD.GREEN : LRD.RED;
-			LRD.addAABB(CollisionTester.blockAABB, color);
+			if(CollisionTester.AABBToAABBTest(CollisionTester.blockAABB, aabb)) {
+				collision = true;
 
-			if(block != 0) {
-				/*/
-				if(CollisionTester.AABBToAABBTest(aabb, CollisionTester.blockAABB)) {
-					console.log('collide');
-					
-					const m = CollisionTester.AABBToAABBDistance(aabb, CollisionTester.blockAABB);
-					vec3.add(position, position, m);
+				const m = CollisionTester.AABBpushAABBNoTest(CollisionTester.blockAABB, aabb);
+				const mMin = Math.min(Math.abs(m[0]), Math.abs(m[1]), Math.abs(m[2]));
+				if(min > mMin) {
+					move[0] = m[0];
+					move[1] = m[1];
+					move[2] = m[2];
+					min = mMin;
 				}
-				//*/
-
-				const m = CollisionTester.AABBpushAABB(CollisionTester.blockAABB, aabb);
-				vec3.add(position, position, m);
 			}
 		}
 
-		return position;
+		return {collision, move};
 	}
 
+	static AABBToBlockPositionTest(aabb, blockPosition) {
+		CollisionTester.blockAABB.setPosition(blockPosition);
+		return CollisionTester.AABBToAABBTest(aabb, CollisionTester.blockAABB);
+	}
 
+	static traceBlock(startPos, endPos, world) {
+		let prevId = null;
+		let prevPos = null;
+		for(let pos of gridRaycast3d(...startPos, ...endPos)) {
+			const blockId = world.getBlock(...pos);
 
+			if(prevId === 0 && blockId !== 0) {
+				break;
+			}
+
+			prevId = blockId;
+			prevPos = pos;
+		}
+
+		return prevPos;
+	}
 
 
 	static isChunkInViewport(chunkAABB, camera) {
@@ -165,6 +214,8 @@ CollisionTester.blockAABB.originMaxY = 1;
 CollisionTester.blockAABB.originMinZ = 0;
 CollisionTester.blockAABB.originMaxZ = 1;
 
+CollisionTester.wallAABB = new AABB();
+
 CollisionTester.chunkAABBPoints = [];
 for(let i = 0; i < 8; ++i) {
 	CollisionTester.chunkAABBPoints.push([0, 0, 0, 1]);
@@ -215,7 +266,7 @@ CollisionTester.swaps = [
 //*/
 
 CollisionTester.swaps = [ // better order
-	//[0, 0, 0],
+	[0, 0, 0],
 
 	[0, -1, 0],
 	[0, 1, 0],
@@ -249,4 +300,6 @@ CollisionTester.swaps = [ // better order
 	[1, 1, -1],
 	[-1, 1, 1],
 	[1, 1, 1],
+
+	[0, 2, 0],
 ];
